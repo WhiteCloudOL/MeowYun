@@ -1,6 +1,11 @@
 # MeowYunCN
 
+[![CI](https://github.com/WhiteCloudOL/MeowYun/actions/workflows/ci.yml/badge.svg)](https://github.com/WhiteCloudOL/MeowYun/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-a9b8ff.svg)](LICENSE)
+
 一个基于 Vue 3、TypeScript 与 Vite 的可配置二次元个人主页。包含沉浸式背景、图标化首页、GitHub 提交历史、文章、导航、友链、联系菜单与备案页脚，并支持响应式布局、主题切换和减少动态效果。
+
+![MeowYun 首页预览](.github/assets/meowyun-home.webp)
 
 ## 首次配置
 
@@ -146,6 +151,8 @@ npm run type-check
 npm run lint
 npm run build
 ```
+
+GitHub Actions 会在推送到 `main`、面向 `main` 的 Pull Request 和手动触发时自动执行同等检查。CI 使用 `site.example.ts` 生成临时配置，成功后上传保留 7 天的 `dist` 构建产物；README 预览图仅保存在 `.github/assets`，构建会检查它没有进入 `dist`。
 
 项目未引入 UI 框架、状态管理或大型动画库。功能图标使用 `lucide-vue-next`，品牌图标使用 Font Awesome Free Brands，其余视觉与交互由原生 CSS 和 Vue 实现。
 
