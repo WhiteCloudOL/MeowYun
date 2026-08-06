@@ -1452,3 +1452,5 @@ Agent 完成任务后，应简要说明：
 - 发布图片元数据复核无 EXIF/GPS，未发现带用户名密码的 URL 或 token/key/secret 查询参数；最终 `npm run lint`、`npm run type-check`、`npm run build` 全部通过。
 - 首次提交清单复核移除未被引用的空 `BaseInput`、`BaseModal`、`AboutView`、`ContactView` 占位文件，避免向开源使用者暴露不存在的组件能力。
 - 已在 GitHub 账号 `WhiteCloudOL` 下创建公开仓库 `MeowYun`，仓库主页指向 `https://meowyun.cn/`；本地 `origin` 已连接到 `https://github.com/WhiteCloudOL/MeowYun.git`。
+- 首次开源版本已推送到远端 `main`；GitHub 端复核仓库为 Public、MIT License 可识别，主题包含 Vue 3、TypeScript、Vite、portfolio 与 personal-website。
+- 远端 Git tree 二次确认不包含真实 `src/config/site.ts`、原始头像 PNG、两张原始背景 PNG 或未使用 JPG；本地 `main` 与 `origin/main` 同步。
