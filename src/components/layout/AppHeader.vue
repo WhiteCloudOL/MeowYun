@@ -60,7 +60,9 @@ onBeforeUnmount(() => navObserver?.disconnect())
   <header class="app-header">
     <div class="page-shell app-header__inner">
       <RouterLink class="app-header__brand" to="/" aria-label="返回首页">
-        <span class="app-header__mark" aria-hidden="true"><IconGlyph name="paw-print" :size="19" /></span>
+        <span class="app-header__mark" aria-hidden="true">
+          <img src="/favicon.png" alt="" width="40" height="40" />
+        </span>
         <span>{{ siteConfig.meta.name }}</span>
       </RouterLink>
 
@@ -155,12 +157,16 @@ onBeforeUnmount(() => navObserver?.disconnect())
   display: grid;
   width: 2.5rem;
   height: 2.5rem;
+  overflow: hidden;
   place-items: center;
-  border-radius: 0.85rem;
-  background: var(--gradient-ribbon);
-  color: #ffffff;
-  font-weight: 800;
-  box-shadow: 0 0.35rem 1rem rgb(162 127 145 / 16%);
+  flex: 0 0 2.5rem;
+}
+
+.app-header__mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0.35rem 0.55rem rgb(162 127 145 / 18%));
 }
 
 .app-header__nav {
