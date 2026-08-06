@@ -1172,6 +1172,15 @@ npm run build
 
 ## 30. Git 规范
 
+提交信息遵循 Conventional Commits，例如：
+
+```text
+feat: add configurable profile section
+fix: preserve direct article routes
+ci: add automated quality and build workflow
+docs: update deployment guide
+```
+
 不应提交：
 
 ```text
@@ -1454,3 +1463,12 @@ Agent 完成任务后，应简要说明：
 - 已在 GitHub 账号 `WhiteCloudOL` 下创建公开仓库 `MeowYun`，仓库主页指向 `https://meowyun.cn/`；本地 `origin` 已连接到 `https://github.com/WhiteCloudOL/MeowYun.git`。
 - 首次开源版本已推送到远端 `main`；GitHub 端复核仓库为 Public、MIT License 可识别，主题包含 Vue 3、TypeScript、Vite、portfolio 与 personal-website。
 - 远端 Git tree 二次确认不包含真实 `src/config/site.ts`、原始头像 PNG、两张原始背景 PNG 或未使用 JPG；本地 `main` 与 `origin/main` 同步。
+
+### 2026-08-06：GitHub Actions CI 与 README 预览
+
+- 新增 `.github/workflows/ci.yml`，在 `main` push、面向 `main` 的 Pull Request 与手动触发时运行；工作流使用只读 contents 权限、并发取消和 10 分钟超时。
+- CI 从 `site.example.ts` 创建被忽略的临时 `site.ts`，依次执行锁定依赖安装、Lint、Lint 零 diff 检查、TypeScript 类型检查与 Vite 生产构建。
+- Checkout、Setup Node 与 Upload Artifact 均固定到经 GitHub 官方仓库确认的 v7 发布提交 SHA；成功构建上传保留 7 天的 `dist` 压缩产物。
+- README 新增 CI/License 徽章和首页预览图；用户提供的 3.73 MB PNG 未复制入仓库，仅保存去元数据、1600×800、约 86 KB 的 `.github/assets/meowyun-home.webp`。
+- CI 和本地构建均检查 README 预览图不会进入 `dist`；提交信息开始遵循 Conventional Commits。
+- 顶栏品牌位不再使用渐变底色的通用爪印图标，改为直接展示 `public/favicon.png`；图片作为已有站点静态资源复用，不新增重复资产，邻接站点名与链接 `aria-label` 保持可访问名称。
