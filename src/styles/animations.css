@@ -1,0 +1,105 @@
+.page-material-enter-active,
+.page-rise-enter-active,
+.page-detail-enter-active,
+.page-fade-enter-active {
+  transition:
+    opacity 460ms ease,
+    transform 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 480ms ease;
+  transform-origin: 50% 12%;
+}
+
+.page-material-leave-active,
+.page-rise-leave-active,
+.page-detail-leave-active,
+.page-fade-leave-active {
+  transition:
+    opacity 120ms ease-out,
+    transform 140ms ease-out;
+}
+
+.page-material-enter-from {
+  opacity: 0;
+  filter: blur(0.45rem) saturate(0.7);
+  transform: translateY(0.75rem) scale(0.975);
+}
+
+.page-material-leave-to {
+  opacity: 0;
+  transform: scale(0.995);
+}
+
+.page-rise-enter-from {
+  opacity: 0;
+  filter: blur(0.28rem);
+  transform: translateY(1.8rem) scale(0.99);
+}
+
+.page-rise-leave-to {
+  opacity: 0;
+  transform: translateY(-0.35rem);
+}
+
+.page-detail-enter-from {
+  opacity: 0;
+  filter: blur(0.25rem);
+  transform: translateX(1.5rem) rotateY(-1.6deg);
+}
+
+.page-detail-leave-to {
+  opacity: 0;
+  transform: translateX(-0.35rem);
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+
+.background-shift-enter-active,
+.background-shift-leave-active {
+  transition:
+    opacity 720ms ease,
+    transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.background-shift-enter-from {
+  opacity: 0;
+  transform: scale(1.025);
+}
+
+.background-shift-leave-to {
+  opacity: 0;
+  transform: scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-material-enter-active,
+  .page-rise-enter-active,
+  .page-detail-enter-active,
+  .page-fade-enter-active {
+    transition: opacity 160ms ease;
+  }
+
+
+  .background-shift-enter-active,
+  .background-shift-leave-active {
+    transition: opacity 160ms ease;
+  }
+
+  .page-material-enter-from,
+  .page-rise-enter-from,
+  .page-detail-enter-from,
+  .page-material-leave-to,
+  .page-rise-leave-to,
+  .page-detail-leave-to {
+    filter: none;
+    transform: none;
+  }
+
+
+  .background-shift-enter-from,
+  .background-shift-leave-to {
+    transform: none;
+  }
+}

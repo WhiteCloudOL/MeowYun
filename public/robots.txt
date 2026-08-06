@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://meowyun.cn/sitemap.xml
+
+# Public SPA routes are crawlable; private config and source files are not deployed.
