@@ -1,12 +1,42 @@
 import hljs from 'highlight.js/lib/core'
 import bash from 'highlight.js/lib/languages/bash'
+import c from 'highlight.js/lib/languages/c'
+import cmake from 'highlight.js/lib/languages/cmake'
+import cpp from 'highlight.js/lib/languages/cpp'
 import css from 'highlight.js/lib/languages/css'
+import csharp from 'highlight.js/lib/languages/csharp'
+import dart from 'highlight.js/lib/languages/dart'
+import diff from 'highlight.js/lib/languages/diff'
 import dockerfile from 'highlight.js/lib/languages/dockerfile'
+import dos from 'highlight.js/lib/languages/dos'
+import go from 'highlight.js/lib/languages/go'
+import graphql from 'highlight.js/lib/languages/graphql'
+import http from 'highlight.js/lib/languages/http'
+import ini from 'highlight.js/lib/languages/ini'
+import java from 'highlight.js/lib/languages/java'
 import javascript from 'highlight.js/lib/languages/javascript'
 import json from 'highlight.js/lib/languages/json'
+import kotlin from 'highlight.js/lib/languages/kotlin'
+import less from 'highlight.js/lib/languages/less'
+import lua from 'highlight.js/lib/languages/lua'
+import makefile from 'highlight.js/lib/languages/makefile'
+import markdownLanguage from 'highlight.js/lib/languages/markdown'
+import nginx from 'highlight.js/lib/languages/nginx'
+import objectivec from 'highlight.js/lib/languages/objectivec'
+import perl from 'highlight.js/lib/languages/perl'
+import php from 'highlight.js/lib/languages/php'
+import plaintext from 'highlight.js/lib/languages/plaintext'
 import powershell from 'highlight.js/lib/languages/powershell'
+import properties from 'highlight.js/lib/languages/properties'
+import protobuf from 'highlight.js/lib/languages/protobuf'
 import python from 'highlight.js/lib/languages/python'
+import rLanguage from 'highlight.js/lib/languages/r'
+import ruby from 'highlight.js/lib/languages/ruby'
 import rust from 'highlight.js/lib/languages/rust'
+import scala from 'highlight.js/lib/languages/scala'
+import scss from 'highlight.js/lib/languages/scss'
+import sql from 'highlight.js/lib/languages/sql'
+import swift from 'highlight.js/lib/languages/swift'
 import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
@@ -57,13 +87,43 @@ const articleAssets = import.meta.glob('../../assets/images/articles/*.{png,jpg,
 // 只注册站内技术文章常用的语言，避免引入 Highlight.js 的完整语言集合。
 const highlightLanguages = {
   bash,
+  c,
+  cmake,
+  cpp,
   css,
+  csharp,
+  dart,
+  diff,
   dockerfile,
+  dos,
+  go,
+  graphql,
+  http,
+  ini,
+  java,
   javascript,
   json,
+  kotlin,
+  less,
+  lua,
+  makefile,
+  markdown: markdownLanguage,
+  nginx,
+  objectivec,
+  perl,
+  php,
+  plaintext,
   powershell,
+  properties,
+  protobuf,
   python,
+  r: rLanguage,
+  ruby,
   rust,
+  scala,
+  scss,
+  sql,
+  swift,
   typescript,
   xml,
   yaml,
@@ -74,7 +134,16 @@ for (const [name, grammar] of Object.entries(highlightLanguages)) {
 }
 
 hljs.registerAliases(['sh', 'shell'], { languageName: 'bash' })
+hljs.registerAliases(['bat', 'batch', 'cmd'], { languageName: 'dos' })
+hljs.registerAliases(['c++', 'hpp'], { languageName: 'cpp' })
+hljs.registerAliases(['cs', 'dotnet'], { languageName: 'csharp' })
 hljs.registerAliases(['js'], { languageName: 'javascript' })
+hljs.registerAliases(['kt', 'kts'], { languageName: 'kotlin' })
+hljs.registerAliases(['md'], { languageName: 'markdown' })
+hljs.registerAliases(['objc'], { languageName: 'objectivec' })
+hljs.registerAliases(['ps1'], { languageName: 'powershell' })
+hljs.registerAliases(['rb'], { languageName: 'ruby' })
+hljs.registerAliases(['toml'], { languageName: 'ini' })
 hljs.registerAliases(['ts'], { languageName: 'typescript' })
 hljs.registerAliases(['html', 'vue'], { languageName: 'xml' })
 hljs.registerAliases(['yml'], { languageName: 'yaml' })

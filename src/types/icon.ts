@@ -30,6 +30,7 @@ export const siteIconNames = [
   'paw-print',
   'rocket',
   'rss',
+  'search',
   'server',
   'sparkles',
   'sun',

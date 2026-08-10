@@ -27,6 +27,16 @@ const router = createRouter({
       },
     },
     {
+      path: '/articles/tags/:tag',
+      name: 'articles-tag',
+      component: () => import('@/views/ArticlesView.vue'),
+      meta: {
+        title: `文章标签 · ${siteConfig.meta.name}`,
+        description: '按标签浏览 QQ 机器人、Minecraft、开源工具与部署运维文章。',
+        transition: 'page-rise',
+      },
+    },
+    {
       path: '/navigation',
       name: 'navigation',
       component: () => import('@/views/NavigationView.vue'),

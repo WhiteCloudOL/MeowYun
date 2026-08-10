@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BaseAvatar from '@/components/ui/BaseAvatar.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import ConfigIcon from '@/components/ui/ConfigIcon.vue'
@@ -7,9 +8,45 @@ import IconGlyph from '@/components/ui/IconGlyph.vue'
 import { siteConfig } from '@/config/site'
 import { articles, type Article } from '@/content/articles'
 
+const route = useRoute()
+const router = useRouter()
+const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const enabledSocials = computed(() => siteConfig.profile.socials.filter((item) => item.enabled))
 const tagCount = computed(() => new Set(articles.flatMap((article) => article.tags)).size)
 const featuredIndex = articles.findIndex((article) => article.featured)
+const selectedTag = computed(() =>
+  typeof route.params.tag === 'string' ? route.params.tag : undefined,
+)
+
+const tags = computed(() => {
+  const counts = new Map<string, number>()
+  for (const article of articles) {
+    for (const tag of article.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1)
+  }
+
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name, 'zh-CN'))
+})
+
+const filteredArticles = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase('zh-CN')
+
+  return articles.filter((article) => {
+    const matchesTag = !selectedTag.value || article.tags.includes(selectedTag.value)
+    const matchesQuery = !query || article.searchText.includes(query)
+    return matchesTag && matchesQuery
+  })
+})
+
+const archiveGroups = computed(() => {
+  const groups = new Map<string, Article[]>()
+  for (const article of filteredArticles.value) {
+    const year = article.publishedAt.slice(0, 4)
+    groups.set(year, [...(groups.get(year) ?? []), article])
+  }
+  return [...groups.entries()].map(([year, items]) => ({ year, items }))
+})
 
 const coverFor = (slug: string) =>
   siteConfig.sections.articles.covers.find((cover) => cover.slug === slug)
@@ -17,6 +54,27 @@ const coverFor = (slug: string) =>
 const isFeatured = (index: number) => index === (featuredIndex === -1 ? 0 : featuredIndex)
 
 const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.image
+
+function submitSearch() {
+  const query = searchQuery.value.trim()
+  void router.replace({
+    path: route.path,
+    query: query ? { q: query } : {},
+  })
+}
+
+function clearFilters() {
+  searchQuery.value = ''
+  void router.push('/articles')
+}
+
+// 浏览器前进/后退时，用 URL 恢复可分享的搜索条件。
+watch(
+  () => route.query.q,
+  (query) => {
+    searchQuery.value = typeof query === 'string' ? query : ''
+  },
+)
 </script>
 
 <template>
@@ -73,49 +131,98 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
       <header class="articles-archive__header">
         <div>
           <p><IconGlyph name="feather" :size="14" /> WRITING ARCHIVE</p>
-          <h1 id="articles-title">文章与笔记</h1>
+          <h1 id="articles-title">{{ selectedTag ? `# ${selectedTag}` : '文章与笔记' }}</h1>
         </div>
-        <span>记录技术、设计与生活里的灵光。</span>
+        <a class="articles-archive__rss" href="/rss.xml" aria-label="订阅 RSS">
+          <IconGlyph name="rss" :size="15" /> RSS
+        </a>
       </header>
 
-      <div class="articles-list">
-        <RouterLink
-          v-for="(article, index) in articles"
-          :key="article.slug"
-          :to="`/articles/${article.slug}`"
-          class="article-item"
+      <form class="articles-tools" role="search" @submit.prevent="submitSearch">
+        <label class="articles-search">
+          <span class="articles-search__label">搜索文章</span>
+          <IconGlyph name="search" :size="17" />
+          <input v-model="searchQuery" type="search" placeholder="搜索标题、正文或技术关键词" />
+          <button type="submit">搜索</button>
+        </label>
+
+        <nav class="articles-tags" aria-label="按标签筛选">
+          <RouterLink to="/articles" :class="{ 'is-active': !selectedTag }">全部</RouterLink>
+          <RouterLink
+            v-for="tag in tags"
+            :key="tag.name"
+            :to="`/articles/tags/${encodeURIComponent(tag.name)}`"
+            :class="{ 'is-active': selectedTag === tag.name }"
+          >
+            {{ tag.name }} <small>{{ tag.count }}</small>
+          </RouterLink>
+        </nav>
+      </form>
+
+      <div v-if="archiveGroups.length" class="articles-archive__groups">
+        <section
+          v-for="group in archiveGroups"
+          :key="group.year"
+          class="articles-year"
+          :aria-labelledby="`articles-year-${group.year}`"
         >
-          <span class="article-item__visual">
-            <IconGlyph v-if="article.icon" :name="article.icon" :size="28" />
-            <img
-              v-else-if="imageFor(article)"
-              :src="imageFor(article)"
-              :alt="`${article.title}缩略图`"
-              :style="{ objectPosition: coverFor(article.slug)?.position ?? 'center' }"
-              loading="lazy"
-            />
-            <IconGlyph v-else name="article" :size="28" />
-          </span>
+          <header class="articles-year__heading">
+            <h2 :id="`articles-year-${group.year}`">{{ group.year }}</h2>
+            <span>{{ group.items.length }} 篇</span>
+          </header>
 
-          <span class="article-item__content">
-            <span class="article-item__topline">
-              <span v-if="isFeatured(index)" class="article-item__featured">
-                <IconGlyph name="sparkles" :size="12" /> 推荐
+          <div class="articles-list">
+            <RouterLink
+              v-for="article in group.items"
+              :key="article.slug"
+              :to="`/articles/${article.slug}`"
+              class="article-item"
+            >
+              <span class="article-item__visual">
+                <IconGlyph v-if="article.icon" :name="article.icon" :size="28" />
+                <img
+                  v-else-if="imageFor(article)"
+                  :src="imageFor(article)"
+                  :alt="`${article.title}缩略图`"
+                  :style="{ objectPosition: coverFor(article.slug)?.position ?? 'center' }"
+                  loading="lazy"
+                />
+                <IconGlyph v-else name="article" :size="28" />
               </span>
-              <time :datetime="article.publishedAt">{{ article.displayDate }}</time>
-            </span>
-            <strong>{{ article.title }}</strong>
-            <small>{{ article.description }}</small>
-            <span class="article-item__meta">
-              <span v-for="tag in article.tags" :key="tag"># {{ tag }}</span>
-              <span><IconGlyph name="clock" :size="13" /> {{ article.readingMinutes }} 分钟</span>
-            </span>
-          </span>
 
-          <span class="article-item__arrow">
-            <IconGlyph name="arrow-right" :size="19" />
-          </span>
-        </RouterLink>
+              <span class="article-item__content">
+                <span class="article-item__topline">
+                  <span
+                    v-if="isFeatured(articles.findIndex((item) => item.slug === article.slug))"
+                    class="article-item__featured"
+                  >
+                    <IconGlyph name="sparkles" :size="12" /> 推荐
+                  </span>
+                  <time :datetime="article.publishedAt">{{ article.displayDate }}</time>
+                </span>
+                <strong>{{ article.title }}</strong>
+                <small>{{ article.description }}</small>
+                <span class="article-item__meta">
+                  <span v-for="tag in article.tags" :key="tag"># {{ tag }}</span>
+                  <span>
+                    <IconGlyph name="clock" :size="13" /> {{ article.readingMinutes }} 分钟
+                  </span>
+                </span>
+              </span>
+
+              <span class="article-item__arrow">
+                <IconGlyph name="arrow-right" :size="19" />
+              </span>
+            </RouterLink>
+          </div>
+        </section>
+      </div>
+
+      <div v-else class="articles-empty">
+        <IconGlyph name="search" :size="28" />
+        <h2>没有找到匹配的文章</h2>
+        <p>换一个关键词或清除标签后再试试。</p>
+        <button type="button" @click="clearFilters">清除筛选</button>
       </div>
     </section>
   </div>
@@ -269,12 +376,145 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
   letter-spacing: -0.065em;
 }
 
-.articles-archive__header > span {
-  max-width: 16rem;
+.articles-archive__rss {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding-inline: 0.9rem;
+  border: 1px solid var(--anime-border);
+  border-radius: var(--radius-round);
   color: var(--anime-muted);
-  font-size: 0.78rem;
-  line-height: 1.65;
-  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.articles-tools {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.articles-search {
+  display: grid;
+  min-height: 3.35rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding-left: var(--space-4);
+  border: 1px solid var(--anime-border-bright);
+  border-radius: 1rem;
+  background: rgb(var(--anime-glass-rgb) / var(--site-glass-opacity, 46%));
+  color: var(--anime-muted);
+  backdrop-filter: blur(1rem);
+}
+
+.articles-search__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.articles-search input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--anime-text);
+  font: inherit;
+}
+
+.articles-search input::placeholder {
+  color: var(--anime-muted);
+}
+
+.articles-search button,
+.articles-empty button {
+  min-height: 2.75rem;
+  padding-inline: var(--space-4);
+  border: 0;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--site-accent) 16%, transparent);
+  color: var(--anime-text);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.articles-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.articles-tags a {
+  display: inline-flex;
+  min-height: 2.4rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding-inline: 0.8rem;
+  border: 1px solid var(--anime-border);
+  border-radius: var(--radius-round);
+  color: var(--anime-muted);
+  font-size: var(--text-xs);
+}
+
+.articles-tags a.is-active {
+  border-color: color-mix(in srgb, var(--site-accent), transparent 50%);
+  background: color-mix(in srgb, var(--site-accent) 14%, transparent);
+  color: var(--anime-text);
+}
+
+.articles-tags small {
+  color: inherit;
+  font-family: var(--font-mono);
+  opacity: 0.72;
+}
+
+.articles-archive__groups,
+.articles-year {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.articles-archive__groups {
+  gap: var(--space-10);
+}
+
+.articles-year__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-inline: var(--space-2);
+}
+
+.articles-year__heading h2 {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  letter-spacing: -0.03em;
+}
+
+.articles-year__heading span {
+  color: var(--anime-muted);
+  font-size: var(--text-xs);
+}
+
+.articles-empty {
+  display: grid;
+  min-height: 20rem;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  border: 1px dashed var(--anime-border-bright);
+  border-radius: var(--radius-large);
+  color: var(--anime-muted);
+  text-align: center;
+}
+
+.articles-empty h2 {
+  color: var(--anime-text);
+  font-size: var(--text-xl);
 }
 
 .articles-list {
@@ -471,10 +711,6 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
     justify-content: start;
   }
 
-  .articles-archive__header > span {
-    display: none;
-  }
-
   .article-item {
     grid-template-columns: 5.4rem minmax(0, 1fr);
     gap: 0.8rem;
@@ -486,6 +722,16 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
 
   .article-item__arrow {
     display: none;
+  }
+
+  .articles-search {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding-right: var(--space-4);
+  }
+
+  .articles-search button {
+    grid-column: 1 / -1;
+    margin: 0 calc(var(--space-4) * -1) 0.3rem;
   }
 }
 
