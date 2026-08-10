@@ -95,6 +95,7 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
+  // 文章需要发布日期、标签等完整 Meta，由 ArticleView 在内容解析完成后独立更新。
   if (to.name === 'article') return
 
   updateSeo({

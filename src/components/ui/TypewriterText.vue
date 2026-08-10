@@ -18,12 +18,14 @@ const finished = ref(!props.enabled)
 let timer: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
+  // 减少动态效果时直接展示全文，避免逐字动画妨碍阅读或产生闪烁。
   if (!props.enabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     displayed.value = props.text
     finished.value = true
     return
   }
 
+  // Array.from 按 Unicode 码点拆分，避免常见中文和 Emoji 被 UTF-16 拆成乱码。
   const characters = Array.from(props.text)
   let index = 0
 

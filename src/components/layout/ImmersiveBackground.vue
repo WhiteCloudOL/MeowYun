@@ -20,6 +20,7 @@ const backgroundStyle = computed(() => ({
   '--background-tint-opacity': `${props.config.tintOpacity * 100}%`,
 }))
 
+// 使用确定性位置而非运行时随机数，避免路由切换或 hydration 后装饰突然跳动。
 const particles = Array.from({ length: 24 }, (_, index) => ({
   id: index,
   left: `${(index * 37 + 11) % 100}%`,

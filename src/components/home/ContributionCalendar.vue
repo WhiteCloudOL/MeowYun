@@ -19,6 +19,7 @@ const fetchState = ref<'loading' | 'live' | 'fallback'>('loading')
 const controller = new AbortController()
 
 const fallbackDays = computed<ContributionDay[]>(() => {
+  // 以用户名生成稳定的演示矩阵，接口不可用时仍保持布局完整且不会伪装成实时数据。
   const seed = Array.from(siteConfig.sections.contributions.username).reduce(
     (total, character) => total + character.charCodeAt(0),
     0,
@@ -64,6 +65,7 @@ const monthLabels = computed(() => {
 const total = computed(() => days.value.reduce((sum, day) => sum + day.count, 0))
 
 function normalizeDay(day: Partial<ContributionDay>): ContributionDay | undefined {
+  // 外部接口数据先归一化并限制等级范围，防止异常数值破坏网格样式。
   if (typeof day.date !== 'string') return undefined
   const count = Math.max(0, Number(day.count ?? 0))
   const inferredLevel = count === 0 ? 0 : count < 3 ? 1 : count < 6 ? 2 : count < 10 ? 3 : 4
@@ -83,6 +85,7 @@ async function loadContributions() {
   }
 
   try {
+    // 用户名先编码再替换模板，避免特殊字符改变请求 URL 的结构。
     const endpoint = template.replaceAll(
       '{username}',
       encodeURIComponent(siteConfig.sections.contributions.username),

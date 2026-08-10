@@ -29,6 +29,7 @@ const brandIcons: Record<FontAwesomeBrandIcon, IconDefinition> = {
   qq: faQq,
 }
 
+// 品牌图标使用显式白名单以保留 Tree Shaking；无效配置回退到通用 Lucide 图标。
 const brandIcon = computed(() => brandIcons[props.name as FontAwesomeBrandIcon])
 const lucideIcon = computed(() => (isSiteIcon(props.name) ? props.name : 'sparkles'))
 </script>

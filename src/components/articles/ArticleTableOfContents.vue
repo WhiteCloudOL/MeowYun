@@ -21,6 +21,7 @@ async function observeHeadings() {
   if (!targets.length) return
 
   activeId.value = window.location.hash.slice(1) || targets[0]?.id || ''
+  // 观察视口上部的窄阅读带，使目录高亮更接近当前实际阅读段落。
   observer = new IntersectionObserver(
     (entries) => {
       const visible = entries

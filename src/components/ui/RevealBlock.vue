@@ -11,6 +11,7 @@ onMounted(() => {
     return
   }
 
+  // 只在首次进入视口时触发；完成后断开观察，避免滚动时反复执行动画。
   observer = new IntersectionObserver(
     ([entry]) => {
       if (!entry?.isIntersecting) return
