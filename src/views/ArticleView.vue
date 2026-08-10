@@ -264,7 +264,7 @@ watchEffect(() => {
 .article-view h1 {
   max-width: 19ch;
   scroll-margin-top: 7rem;
-  font-size: clamp(2rem, 3.8vw, 3.45rem);
+  font-size: clamp(1.85rem, 3vw, 2.75rem);
   font-weight: 780;
   letter-spacing: -0.048em;
   line-height: 1.15;
@@ -485,7 +485,7 @@ watchEffect(() => {
   }
 
   .article-view h1 {
-    font-size: clamp(1.9rem, 9.5vw, 2.35rem);
+    font-size: clamp(1.75rem, 8.2vw, 2rem);
   }
 
   .article-view__meta-row {
