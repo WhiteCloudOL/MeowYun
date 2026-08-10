@@ -17,11 +17,18 @@ const pageBackground = computed(() => {
 
   if (route.name === 'friends') pageOverride = siteConfig.appearance.friendsBackground
   if (route.name === 'home') pageOverride = siteConfig.appearance.homeBackground
+  // 文章详情自动关闭装饰动画并压低背景，保证长文阅读时的对比度。
+  if (route.name === 'article') pageOverride = siteConfig.appearance.readingBackground
 
   return {
     ...globalBackground,
     ...pageOverride,
     ...(!isDark.value ? siteConfig.appearance.lightBackground : undefined),
+    ...(route.name === 'article'
+      ? isDark.value
+        ? siteConfig.appearance.readingBackground
+        : siteConfig.appearance.lightReadingBackground
+      : undefined),
   } satisfies PageBackground
 })
 
@@ -31,9 +38,14 @@ const pageBackgroundKey = computed(
 
 const appStyle = computed(() => ({
   '--site-accent': siteConfig.appearance.accent,
-  '--site-glass-opacity': isDark.value
-    ? siteConfig.appearance.glassOpacity
-    : siteConfig.appearance.lightGlassOpacity,
+  '--site-glass-opacity':
+    route.name === 'article'
+      ? isDark.value
+        ? Math.max(siteConfig.appearance.glassOpacity, 0.72)
+        : Math.max(siteConfig.appearance.lightGlassOpacity, 0.94)
+      : isDark.value
+        ? siteConfig.appearance.glassOpacity
+        : siteConfig.appearance.lightGlassOpacity,
 }))
 </script>
 

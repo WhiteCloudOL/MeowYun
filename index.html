@@ -29,16 +29,26 @@
       content="记录 QQ 机器人、Minecraft 服务端工具、开源项目与中文技术文档。"
     />
     <meta property="og:url" content="https://meowyun.cn/" />
-    <meta property="og:image" content="https://meowyun.cn/favicon.png" />
+    <meta property="og:image" content="https://meowyun.cn/og-card.webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="清蒸云鸭 · 个人主页" />
     <meta
       name="twitter:description"
       content="记录 QQ 机器人、Minecraft 服务端工具、开源项目与中文技术文档。"
     />
-    <meta name="twitter:image" content="https://meowyun.cn/favicon.png" />
+    <meta name="twitter:image" content="https://meowyun.cn/og-card.webp" />
     <script>
-      document.documentElement.dataset.theme = localStorage.getItem('meowyun-theme') || 'dark'
+      // 在 Vue 启动前解析主题，避免页面首次绘制时出现明暗闪烁。
+      const preference = localStorage.getItem('meowyun-theme') || 'system'
+      document.documentElement.dataset.theme =
+        preference === 'system'
+          ? matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light'
+          : preference
     </script>
     <title>清蒸云鸭 · 个人主页</title>
   </head>

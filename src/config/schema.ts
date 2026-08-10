@@ -100,6 +100,8 @@ export interface SiteConfig {
     homeBackground?: Partial<PageBackground>
     friendsBackground?: Partial<PageBackground>
     contentBackground?: Partial<PageBackground>
+    readingBackground?: Partial<PageBackground>
+    lightReadingBackground?: Partial<PageBackground>
     themeToggle: boolean
   }
   navigation: NavigationItem[]

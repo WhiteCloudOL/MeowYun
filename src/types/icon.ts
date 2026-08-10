@@ -25,6 +25,7 @@ export const siteIconNames = [
   'map-pin',
   'menu',
   'message-circle',
+  'monitor',
   'moon',
   'palette',
   'paw-print',

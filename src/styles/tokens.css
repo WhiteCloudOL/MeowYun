@@ -72,9 +72,9 @@
   --page-padding: clamp(1rem, 4vw, 2.5rem);
   --header-height: 5rem;
 
-  --anime-text: #252b49;
-  --anime-text-soft: #414968;
-  --anime-muted: #626c8b;
+  --anime-text: #17213f;
+  --anime-text-soft: #303b5d;
+  --anime-muted: #4b5878;
   --anime-glass-rgb: 255 255 255;
   --anime-glass: rgb(255 255 255 / 82%);
   --anime-glass-strong: rgb(255 255 255 / 92%);

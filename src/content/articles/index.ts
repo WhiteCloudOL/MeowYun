@@ -84,7 +84,7 @@ const articleAssets = import.meta.glob('../../assets/images/articles/*.{png,jpg,
   import: 'default',
 }) as Record<string, string>
 
-// 只注册站内技术文章常用的语言，避免引入 Highlight.js 的完整语言集合。
+// 按需注册主流语言与常见配置格式，兼顾覆盖范围和文章页包体积。
 const highlightLanguages = {
   bash,
   c,

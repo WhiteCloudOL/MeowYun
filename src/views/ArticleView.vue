@@ -89,6 +89,10 @@ watchEffect(() => {
           description: article.value.description,
           path: route.fullPath,
           type: 'article',
+          image: article.value.cover,
+          publishedAt: article.value.publishedAt,
+          updatedAt: article.value.updatedAt,
+          tags: article.value.tags,
         }
       : {
           title: `文章未找到 · ${siteConfig.meta.name}`,

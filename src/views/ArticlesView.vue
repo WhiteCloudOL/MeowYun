@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BaseAvatar from '@/components/ui/BaseAvatar.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -7,6 +7,7 @@ import ConfigIcon from '@/components/ui/ConfigIcon.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
 import { siteConfig } from '@/config/site'
 import { articles, type Article } from '@/content/articles'
+import { updateSeo } from '@/utils/seo'
 
 const route = useRoute()
 const router = useRouter()
@@ -75,6 +76,21 @@ watch(
     searchQuery.value = typeof query === 'string' ? query : ''
   },
 )
+
+watchEffect(() => {
+  const tag = selectedTag.value
+  const hasSearch = searchQuery.value.trim().length > 0
+  updateSeo({
+    title: tag ? `#${tag} 文章 · ${siteConfig.meta.name}` : `文章 · ${siteConfig.meta.name}`,
+    description: tag
+      ? `浏览与 ${tag} 相关的技术文章、实践记录与开发笔记。`
+      : 'QQ 机器人、Minecraft 服务端、开源工具与部署运维笔记。',
+    path: route.path,
+    tags: tag ? [tag] : undefined,
+    // 搜索结果随关键词变化，不应作为独立页面进入索引。
+    noIndex: hasSearch,
+  })
+})
 </script>
 
 <template>
@@ -456,6 +472,7 @@ watch(
   padding-inline: 0.8rem;
   border: 1px solid var(--anime-border);
   border-radius: var(--radius-round);
+  background: color-mix(in srgb, var(--anime-glass-strong) 72%, transparent);
   color: var(--anime-muted);
   font-size: var(--text-xs);
 }
