@@ -35,7 +35,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="redirect-view page-shell" aria-live="polite">
+  <section class="redirect-view page-shell" aria-live="polite">
     <IconGlyph name="external-link" :size="28" />
     <p class="eyebrow">REDIRECTING</p>
     <h1>
@@ -44,7 +44,7 @@ onBeforeUnmount(() => {
     </h1>
     <p>将在 {{ remainingSeconds }} 秒后自动跳转，也可以立即继续。</p>
     <BaseButton @click="redirectNow">立即访问</BaseButton>
-  </main>
+  </section>
 </template>
 
 <style scoped>

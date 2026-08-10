@@ -23,6 +23,7 @@ export const siteIconNames = [
   'link',
   'mail',
   'map-pin',
+  'menu',
   'message-circle',
   'moon',
   'palette',
@@ -36,6 +37,7 @@ export const siteIconNames = [
   'user',
   'users',
   'video',
+  'x',
   'zap',
 ] as const
 

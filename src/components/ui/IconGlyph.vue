@@ -24,6 +24,7 @@ import {
   Link,
   Mail,
   MapPin,
+  Menu,
   MessageCircle,
   Moon,
   Palette,
@@ -37,6 +38,7 @@ import {
   TvMinimalPlay,
   UserRound,
   Users,
+  X,
   Zap,
 } from 'lucide-vue-next'
 import type { SiteIcon } from '@/types/icon'
@@ -78,6 +80,7 @@ const icons: Record<SiteIcon, Component> = {
   link: Link,
   mail: Mail,
   'map-pin': MapPin,
+  menu: Menu,
   'message-circle': MessageCircle,
   moon: Moon,
   palette: Palette,
@@ -91,6 +94,7 @@ const icons: Record<SiteIcon, Component> = {
   user: UserRound,
   users: Users,
   video: TvMinimalPlay,
+  x: X,
   zap: Zap,
 }
 </script>

@@ -8,8 +8,17 @@ import ThemeToggle from './ThemeToggle.vue'
 
 const route = useRoute()
 const navElement = ref<HTMLElement>()
+const mobileNavOpen = ref(false)
 const indicatorStyle = ref({ width: '0px', transform: 'translateX(0)', opacity: '0' })
 let navObserver: ResizeObserver | undefined
+
+function closeMobileNav() {
+  mobileNavOpen.value = false
+}
+
+function handleDocumentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') closeMobileNav()
+}
 
 function isNavActive(to?: string) {
   if (!to) return false
@@ -39,21 +48,28 @@ function updateIndicator() {
   }
 }
 
+// 路由切换后关闭移动菜单，并在 DOM 更新完成后重新测量桌面导航指示条。
 watch(
   () => route.path,
   async () => {
+    closeMobileNav()
     await nextTick()
     requestAnimationFrame(updateIndicator)
   },
 )
 
 onMounted(() => {
+  // 字体、断点或导航文案变化都会改变链接宽度，ResizeObserver 可避免写死位置。
   navObserver = new ResizeObserver(updateIndicator)
   if (navElement.value) navObserver.observe(navElement.value)
+  document.addEventListener('keydown', handleDocumentKeydown)
   updateIndicator()
 })
 
-onBeforeUnmount(() => navObserver?.disconnect())
+onBeforeUnmount(() => {
+  navObserver?.disconnect()
+  document.removeEventListener('keydown', handleDocumentKeydown)
+})
 </script>
 
 <template>
@@ -66,7 +82,13 @@ onBeforeUnmount(() => navObserver?.disconnect())
         <span>{{ siteConfig.meta.name }}</span>
       </RouterLink>
 
-      <nav ref="navElement" class="app-header__nav" aria-label="主要导航">
+      <nav
+        id="primary-navigation"
+        ref="navElement"
+        class="app-header__nav"
+        :class="{ 'app-header__nav--open': mobileNavOpen }"
+        aria-label="主要导航"
+      >
         <span class="app-header__indicator" :style="indicatorStyle" aria-hidden="true"></span>
         <template
           v-for="item in siteConfig.navigation.filter((entry) => entry.enabled)"
@@ -92,11 +114,7 @@ onBeforeUnmount(() => navObserver?.disconnect())
                   class="app-header__menu-icon"
                   :style="{ '--menu-accent': child.color ?? 'var(--site-accent)' }"
                 >
-                  <ConfigIcon
-                    :name="child.icon"
-                    :provider="child.iconProvider"
-                    :size="17"
-                  />
+                  <ConfigIcon :name="child.icon" :provider="child.iconProvider" :size="17" />
                 </span>
                 <span>{{ child.label }}</span>
                 <IconGlyph name="arrow-up-right" :size="13" />
@@ -117,8 +135,27 @@ onBeforeUnmount(() => navObserver?.disconnect())
         </template>
       </nav>
 
-      <ThemeToggle v-if="siteConfig.appearance.themeToggle" />
+      <div class="app-header__actions">
+        <ThemeToggle v-if="siteConfig.appearance.themeToggle" />
+        <button
+          class="app-header__menu-toggle"
+          type="button"
+          :aria-expanded="mobileNavOpen"
+          aria-controls="primary-navigation"
+          :aria-label="mobileNavOpen ? '关闭导航菜单' : '打开导航菜单'"
+          @click="mobileNavOpen = !mobileNavOpen"
+        >
+          <IconGlyph :name="mobileNavOpen ? 'x' : 'menu'" :size="20" />
+        </button>
+      </div>
     </div>
+    <button
+      v-if="mobileNavOpen"
+      class="app-header__backdrop"
+      type="button"
+      aria-label="关闭导航菜单"
+      @click="closeMobileNav"
+    ></button>
   </header>
 </template>
 
@@ -309,6 +346,34 @@ onBeforeUnmount(() => navObserver?.disconnect())
   justify-self: end;
 }
 
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: var(--space-2);
+}
+
+.app-header__menu-toggle {
+  display: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid var(--anime-border);
+  border-radius: 50%;
+  background: var(--anime-glass-strong);
+  color: var(--anime-text);
+  cursor: pointer;
+}
+
+.app-header__backdrop {
+  position: fixed;
+  z-index: -1;
+  inset: 4.35rem 0 0;
+  border: 0;
+  background: rgb(3 7 24 / 38%);
+  backdrop-filter: blur(0.2rem);
+}
+
 @media (hover: hover) {
   .app-header__link:hover {
     color: var(--anime-text);
@@ -350,8 +415,37 @@ onBeforeUnmount(() => navObserver?.disconnect())
   }
 
   .app-header__nav {
-    flex: 1;
-    justify-content: flex-end;
+    position: fixed;
+    z-index: 1;
+    top: calc(4.35rem + 0.55rem);
+    right: var(--page-padding);
+    left: var(--page-padding);
+    display: grid;
+    max-height: calc(100vh - 5.5rem);
+    align-items: stretch;
+    justify-content: stretch;
+    gap: 0.25rem;
+    padding: 0.55rem;
+    overflow-y: auto;
+    border: 1px solid var(--anime-border-bright);
+    border-radius: 1.15rem;
+    background: var(--anime-popover);
+    box-shadow: var(--anime-shadow);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-0.5rem) scale(0.98);
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-fast),
+      visibility var(--transition-fast);
+    visibility: hidden;
+  }
+
+  .app-header__nav--open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    visibility: visible;
   }
 
   .app-header__mark {
@@ -359,8 +453,22 @@ onBeforeUnmount(() => navObserver?.disconnect())
     height: 2.15rem;
   }
 
-  .app-header__nav .icon-glyph:not(.app-header__chevron) {
+  .app-header__indicator {
     display: none;
+  }
+
+  .app-header__link {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.8rem;
+    font-size: var(--text-sm);
+  }
+
+  .app-header__link--active {
+    background: color-mix(in srgb, var(--site-accent) 14%, transparent);
   }
 
   .app-header__menu .icon-glyph {
@@ -368,21 +476,29 @@ onBeforeUnmount(() => navObserver?.disconnect())
   }
 
   .app-header__summary {
-    gap: 0.15rem;
+    gap: var(--space-3);
   }
 
   .app-header__menu {
-    position: fixed;
-    top: 4.1rem;
-    right: var(--page-padding);
+    position: static;
+    width: 100%;
+    margin-top: 0.25rem;
+    border-color: var(--anime-border);
+    background: var(--anime-inner);
+    box-shadow: none;
+    animation: none;
   }
 
   .app-header__menu::before {
     display: none;
   }
 
-  .app-header :deep(.base-icon-button) {
-    display: none;
+  .app-header__actions {
+    margin-left: auto;
+  }
+
+  .app-header__menu-toggle {
+    display: grid;
   }
 }
 

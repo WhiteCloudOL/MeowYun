@@ -20,7 +20,7 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
 </script>
 
 <template>
-  <main class="articles-view page-shell">
+  <div class="articles-view page-shell">
     <aside class="articles-profile" aria-label="作者资料">
       <BaseCard class="articles-profile__card" :hoverable="false">
         <BaseAvatar
@@ -32,7 +32,7 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
 
         <div class="articles-profile__identity">
           <p>{{ siteConfig.profile.handle }}</p>
-          <h1>{{ siteConfig.profile.name }}</h1>
+          <h2>{{ siteConfig.profile.name }}</h2>
           <span>{{ siteConfig.profile.tagline }}</span>
         </div>
 
@@ -73,7 +73,7 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
       <header class="articles-archive__header">
         <div>
           <p><IconGlyph name="feather" :size="14" /> WRITING ARCHIVE</p>
-          <h2 id="articles-title">文章与笔记</h2>
+          <h1 id="articles-title">文章与笔记</h1>
         </div>
         <span>记录技术、设计与生活里的灵光。</span>
       </header>
@@ -118,7 +118,7 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
         </RouterLink>
       </div>
     </section>
-  </main>
+  </div>
 </template>
 
 <style scoped>
@@ -162,7 +162,7 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
   min-width: 0;
 }
 
-.articles-profile__identity h1 {
+.articles-profile__identity h2 {
   margin: 0;
   font-size: 1.35rem;
   letter-spacing: -0.04em;
@@ -263,7 +263,7 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
   letter-spacing: 0.15em;
 }
 
-.articles-archive__header h2 {
+.articles-archive__header h1 {
   margin: 0.4rem 0 0;
   font-size: clamp(2rem, 5vw, 3.8rem);
   letter-spacing: -0.065em;
@@ -298,7 +298,9 @@ const imageFor = (article: Article) => article.cover ?? coverFor(article.slug)?.
   border-radius: 1.35rem;
   background: rgb(var(--anime-glass-rgb) / var(--site-glass-opacity, 46%));
   color: var(--anime-text);
-  box-shadow: var(--anime-shadow), inset 0 1px rgb(255 255 255 / 8%);
+  box-shadow:
+    var(--anime-shadow),
+    inset 0 1px rgb(255 255 255 / 8%);
   backdrop-filter: blur(1rem) saturate(120%);
   -webkit-backdrop-filter: blur(1rem) saturate(120%);
   transition:

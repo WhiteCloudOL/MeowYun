@@ -15,7 +15,7 @@ const isInternal = (href: string) => href.startsWith('/')
 </script>
 
 <template>
-  <main class="navigation-view page-shell">
+  <div class="navigation-view page-shell">
     <header class="navigation-view__hero">
       <span class="navigation-view__eyebrow">
         <IconGlyph name="compass" :size="15" />
@@ -71,7 +71,11 @@ const isInternal = (href: string) => href.startsWith('/')
       </div>
     </section>
 
-    <section v-if="projects.length" class="navigation-view__section" aria-labelledby="project-title">
+    <section
+      v-if="projects.length"
+      class="navigation-view__section"
+      aria-labelledby="project-title"
+    >
       <div class="navigation-view__heading">
         <div>
           <span>CREATIONS</span>
@@ -82,12 +86,7 @@ const isInternal = (href: string) => href.startsWith('/')
 
       <div class="navigation-view__grid navigation-view__grid--projects">
         <BaseCard v-for="project in projects" :key="project.id" class="navigation-card" hoverable>
-          <a
-            class="navigation-card__link"
-            :href="project.href"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a class="navigation-card__link" :href="project.href" target="_blank" rel="noreferrer">
             <span class="navigation-card__icon" :style="{ '--card-accent': project.accent }">
               <ConfigIcon :name="project.icon" :provider="project.iconProvider" :size="23" />
             </span>
@@ -100,7 +99,7 @@ const isInternal = (href: string) => href.startsWith('/')
         </BaseCard>
       </div>
     </section>
-  </main>
+  </div>
 </template>
 
 <style scoped>
