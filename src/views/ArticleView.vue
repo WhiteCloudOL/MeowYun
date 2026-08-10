@@ -117,53 +117,60 @@ watchEffect(() => {
 
     <div class="article-view__layout">
       <div class="article-view__column">
-        <header class="article-view__header">
-          <h1 id="article-title">{{ article.title }}</h1>
-          <p class="article-view__description">{{ article.description }}</p>
+        <BaseCard
+          class="article-view__surface"
+          :hoverable="false"
+          :padded="false"
+          variant="solid"
+        >
+          <header class="article-view__header">
+            <h1 id="article-title">{{ article.title }}</h1>
+            <p class="article-view__description">{{ article.description }}</p>
 
-          <div class="article-view__meta-row">
-            <div class="article-view__meta">
-              <span>
-                <IconGlyph name="calendar-days" :size="15" />
-                <time :datetime="article.publishedAt">发布于 {{ article.displayDate }}</time>
-              </span>
-              <span v-if="article.updatedAt">
-                <IconGlyph name="clock" :size="15" />
-                <time :datetime="article.updatedAt">更新于 {{ article.displayUpdatedAt }}</time>
-              </span>
-              <RouterLink
-                v-for="tag in article.tags"
-                :key="tag"
-                :to="`/articles/tags/${encodeURIComponent(tag)}`"
-              >
-                # {{ tag }}
-              </RouterLink>
-            </div>
-
-            <div class="article-view__share-control">
-              <button
-                class="article-view__share-button"
-                type="button"
-                :aria-label="shareStatus || '复制文章分享链接'"
-                title="复制文章分享链接"
-                @click="copyArticleLink"
-              >
-                <IconGlyph
-                  :name="shareStatus === '文章链接已复制' ? 'check' : 'share-2'"
-                  :size="17"
-                />
-              </button>
-              <Transition name="share-tip">
-                <span v-if="shareStatus" class="article-view__share-tip" role="status">
-                  {{ shareStatus }}
+            <div class="article-view__meta-row">
+              <div class="article-view__meta">
+                <span>
+                  <IconGlyph name="calendar-days" :size="15" />
+                  <time :datetime="article.publishedAt">发布于 {{ article.displayDate }}</time>
                 </span>
-              </Transition>
-            </div>
-          </div>
-        </header>
+                <span v-if="article.updatedAt">
+                  <IconGlyph name="clock" :size="15" />
+                  <time :datetime="article.updatedAt">更新于 {{ article.displayUpdatedAt }}</time>
+                </span>
+                <RouterLink
+                  v-for="tag in article.tags"
+                  :key="tag"
+                  :to="`/articles/tags/${encodeURIComponent(tag)}`"
+                >
+                  # {{ tag }}
+                </RouterLink>
+              </div>
 
-        <BaseCard class="article-view__body" :hoverable="false" variant="solid">
-          <MarkdownContent :html="article.contentHtml" />
+              <div class="article-view__share-control">
+                <button
+                  class="article-view__share-button"
+                  type="button"
+                  :aria-label="shareStatus || '复制文章分享链接'"
+                  title="复制文章分享链接"
+                  @click="copyArticleLink"
+                >
+                  <IconGlyph
+                    :name="shareStatus === '文章链接已复制' ? 'check' : 'share-2'"
+                    :size="17"
+                  />
+                </button>
+                <Transition name="share-tip">
+                  <span v-if="shareStatus" class="article-view__share-tip" role="status">
+                    {{ shareStatus }}
+                  </span>
+                </Transition>
+              </div>
+            </div>
+          </header>
+
+          <div class="article-view__body">
+            <MarkdownContent :html="article.contentHtml" />
+          </div>
         </BaseCard>
 
         <footer v-if="article.sourceUrl" class="article-view__source">
@@ -250,15 +257,16 @@ watchEffect(() => {
   gap: var(--space-6);
 }
 
+.article-view__surface {
+  border-color: var(--anime-border);
+  background: var(--anime-glass-strong);
+  box-shadow: 0 0.8rem 3rem rgb(3 8 27 / 14%);
+}
+
 .article-view__header {
   display: grid;
   gap: var(--space-4);
   padding: clamp(var(--space-5), 4vw, var(--space-8));
-  border: 1px solid var(--anime-border);
-  border-radius: var(--radius-large);
-  background: rgb(var(--anime-glass-rgb) / calc(var(--site-glass-opacity, 46%) + 8%));
-  box-shadow: 0 0.8rem 3rem rgb(3 8 27 / 12%);
-  backdrop-filter: blur(1rem) saturate(116%);
 }
 
 .article-view h1 {
@@ -379,9 +387,7 @@ watchEffect(() => {
 
 .article-view__body {
   padding: clamp(var(--space-6), 5vw, var(--space-10));
-  border-color: var(--anime-border);
-  border-radius: var(--radius-large);
-  box-shadow: 0 0.8rem 3rem rgb(3 8 27 / 14%);
+  border-top: 1px solid var(--anime-border);
 }
 
 .article-view__toc {
