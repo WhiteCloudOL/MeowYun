@@ -220,9 +220,6 @@ watchEffect(() => {
                 <small>{{ article.description }}</small>
                 <span class="article-item__meta">
                   <span v-for="tag in article.tags" :key="tag"># {{ tag }}</span>
-                  <span>
-                    <IconGlyph name="clock" :size="13" /> {{ article.readingMinutes }} 分钟
-                  </span>
                 </span>
               </span>
 

@@ -56,7 +56,6 @@ export interface Article {
   displayUpdatedAt?: string
   tags: string[]
   featured: boolean
-  readingMinutes: number
   icon?: SiteIcon
   cover?: string
   sourceUrl?: string
@@ -275,12 +274,6 @@ function renderMarkdown(body: string) {
   }
 }
 
-function estimateReadingMinutes(body: string) {
-  const latinWords = body.match(/[a-zA-Z0-9]+/g)?.length ?? 0
-  const cjkCharacters = body.match(/[\u3400-\u9fff]/g)?.length ?? 0
-  return Math.max(1, Math.ceil((latinWords + cjkCharacters) / 300))
-}
-
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
@@ -320,7 +313,6 @@ export const articles: Article[] = Object.entries(articleFiles)
       displayUpdatedAt: updatedAt ? formatDate(updatedAt) : undefined,
       tags: parseTags(attributes.tags),
       featured: attributes.featured === 'true',
-      readingMinutes: estimateReadingMinutes(body),
       icon,
       cover: resolveImage(attributes.cover) ?? resolveImage(firstImage),
       sourceUrl: attributes.sourceUrl,

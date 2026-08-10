@@ -121,21 +121,43 @@ watchEffect(() => {
         <p class="eyebrow">Article</p>
         <h1 id="article-title">{{ article.title }}</h1>
         <p class="article-view__description">{{ article.description }}</p>
-        <div class="article-view__meta">
-          <time :datetime="article.publishedAt">{{ article.displayDate }}</time>
-          <span v-if="article.updatedAt">
-            更新于
-            <time :datetime="article.updatedAt">{{ article.displayUpdatedAt }}</time>
-          </span>
-          <span
-            ><IconGlyph name="clock" :size="13" /> 约 {{ article.readingMinutes }} 分钟阅读</span
-          >
-          <button type="button" @click="copyArticleLink">
-            <IconGlyph name="link" :size="13" /> 复制链接
-          </button>
-        </div>
         <div class="article-view__tags">
           <BaseTag v-for="tag in article.tags" :key="tag">{{ tag }}</BaseTag>
+        </div>
+        <div class="article-view__utility-row">
+          <div class="article-view__meta">
+            <span class="article-view__date-item">
+              <IconGlyph name="calendar-days" :size="16" />
+              <span>
+                <small>发布于</small>
+                <time :datetime="article.publishedAt">{{ article.displayDate }}</time>
+              </span>
+            </span>
+            <span v-if="article.updatedAt" class="article-view__date-item">
+              <IconGlyph name="clock" :size="16" />
+              <span>
+                <small>更新于</small>
+                <time :datetime="article.updatedAt">{{ article.displayUpdatedAt }}</time>
+              </span>
+            </span>
+          </div>
+
+          <div class="article-view__share-control">
+            <button
+              class="article-view__share-button"
+              type="button"
+              :aria-label="shareStatus || '复制文章分享链接'"
+              title="复制文章分享链接"
+              @click="copyArticleLink"
+            >
+              <IconGlyph :name="shareStatus === '文章链接已复制' ? 'check' : 'share-2'" :size="18" />
+            </button>
+            <Transition name="share-tip">
+              <span v-if="shareStatus" class="article-view__share-tip" role="status">
+                {{ shareStatus }}
+              </span>
+            </Transition>
+          </div>
         </div>
       </header>
 
@@ -178,7 +200,6 @@ watchEffect(() => {
         </RouterLink>
       </nav>
 
-      <p class="article-view__share-status" aria-live="polite">{{ shareStatus }}</p>
     </div>
   </article>
 
@@ -239,32 +260,132 @@ watchEffect(() => {
   font-size: var(--text-lg);
 }
 
-.article-view__meta,
 .article-view__tags {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
 }
 
-.article-view__meta {
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+.article-view__utility-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-top: var(--space-1);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--anime-border);
 }
 
-.article-view__meta span,
-.article-view__meta button {
+.article-view__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  color: var(--anime-muted);
+}
+
+.article-view__date-item {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
-.article-view__meta button {
-  border: 0;
-  background: transparent;
-  color: inherit;
+.article-view__date-item > span {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.article-view__date-item small {
+  color: var(--anime-muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.article-view__date-item time {
+  color: var(--anime-text-soft);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.article-view__share-control {
+  position: relative;
+  flex: none;
+}
+
+.article-view__share-button {
+  position: relative;
+  display: grid;
+  width: 2.85rem;
+  height: 2.85rem;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background:
+    linear-gradient(var(--anime-glass-strong), var(--anime-glass-strong)) padding-box,
+    linear-gradient(135deg, #9fc5ff, #c5b5ff 56%, #ffb5d0) border-box;
+  color: var(--anime-text-soft);
   cursor: pointer;
-  font: inherit;
+  box-shadow:
+    0 0.5rem 1.5rem rgb(5 10 32 / 18%),
+    inset 0 1px rgb(255 255 255 / 20%);
+  backdrop-filter: blur(0.9rem);
+  transition:
+    color var(--transition-fast),
+    box-shadow var(--transition-normal),
+    transform var(--transition-press);
+}
+
+.article-view__share-button::after {
+  position: absolute;
+  top: 0.38rem;
+  right: 0.42rem;
+  width: 0.26rem;
+  height: 0.26rem;
+  border-radius: 50%;
+  background: #ffd2e2;
+  box-shadow: 0 0 0.5rem #ffd2e2;
+  content: '';
+  opacity: 0.72;
+}
+
+.article-view__share-button:active {
+  transform: scale(0.93);
+}
+
+.article-view__share-tip {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 0.65rem);
+  right: 0;
+  width: max-content;
+  max-width: min(13rem, calc(100vw - 2rem));
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--anime-border-bright);
+  border-radius: 0.7rem;
+  background: var(--anime-popover);
+  color: var(--anime-text-soft);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  white-space: nowrap;
+  backdrop-filter: blur(1rem);
+}
+
+.share-tip-enter-active,
+.share-tip-leave-active {
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.share-tip-enter-from,
+.share-tip-leave-to {
+  opacity: 0;
+  transform: translateY(-0.25rem) scale(0.96);
 }
 
 .article-view__back-icon {
@@ -339,25 +460,16 @@ watchEffect(() => {
   white-space: nowrap;
 }
 
-.article-view__share-status {
-  position: fixed;
-  z-index: 40;
-  right: var(--page-padding);
-  bottom: var(--space-6);
-  min-height: 0;
-  padding: 0;
-  border-radius: var(--radius-round);
-  background: var(--anime-popover);
-  color: var(--anime-text);
-  font-size: var(--text-sm);
-  box-shadow: var(--anime-shadow);
-}
-
-.article-view__share-status:not(:empty) {
-  padding: var(--space-3) var(--space-5);
-}
-
 @media (hover: hover) {
+  .article-view__share-button:hover {
+    color: var(--anime-text);
+    box-shadow:
+      0 0.65rem 1.8rem rgb(5 10 32 / 24%),
+      0 0 1.1rem rgb(169 184 255 / 18%),
+      inset 0 1px rgb(255 255 255 / 26%);
+    transform: translateY(-0.12rem) rotate(-3deg);
+  }
+
   .article-view__pager-link:hover {
     border-color: var(--anime-border-bright);
     transform: translateY(-0.15rem);
@@ -381,6 +493,16 @@ watchEffect(() => {
 }
 
 @media (max-width: 36rem) {
+  .article-view__utility-row {
+    align-items: flex-end;
+  }
+
+  .article-view__share-tip {
+    top: auto;
+    right: 0;
+    bottom: calc(100% + 0.65rem);
+  }
+
   .article-view__source {
     align-items: stretch;
     flex-direction: column;
@@ -418,6 +540,14 @@ watchEffect(() => {
 
   .article-view__pager {
     grid-row: 5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-view__share-button,
+  .share-tip-enter-active,
+  .share-tip-leave-active {
+    transition: none;
   }
 }
 </style>
