@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import IconGlyph from '@/components/ui/IconGlyph.vue'
 import { siteConfig } from '@/config/site'
+
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 </script>
 
 <template>
-  <footer class="app-footer">
+  <footer class="app-footer" :class="{ 'app-footer--compact': compact }">
     <div class="page-shell app-footer__inner">
       <p class="app-footer__note">
         <IconGlyph name="heart" :size="14" />
@@ -49,14 +51,24 @@ import { siteConfig } from '@/config/site'
 <style scoped>
 .app-footer {
   padding-block: var(--space-10) var(--space-6);
-  color: var(--anime-muted);
+  color: #6b584e;
+  font-family: ui-rounded, 'Hiragino Maru Gothic ProN', 'Microsoft YaHei UI', sans-serif;
   font-size: var(--text-xs);
 }
 
 .app-footer__inner {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-3);
+  display: flex;
+  width: 100%;
+  max-width: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  padding: 0.65rem 1rem;
+  border: 3px solid #4a3b32;
+  border-radius: 1.2rem;
+  background: #fffdf9;
+  box-shadow: 5px 5px 0 #a7e9af;
   text-align: center;
 }
 
@@ -75,11 +87,16 @@ import { siteConfig } from '@/config/site'
 }
 
 .app-footer__disclaimer {
+  display: -webkit-box;
+  width: 100%;
   max-width: 48rem;
-  margin-top: var(--space-1);
+  margin-top: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
   color: color-mix(in srgb, var(--anime-muted), transparent 14%);
   font-size: 0.68rem;
-  line-height: 1.75;
+  line-height: 1.4;
 }
 
 .app-footer__disclaimer a {
@@ -103,6 +120,71 @@ import { siteConfig } from '@/config/site'
 @media (hover: hover) {
   .beian-item:hover {
     color: var(--anime-text);
+  }
+}
+
+.app-footer--compact {
+  padding: 0;
+  color: #6b584e;
+  font-family: ui-rounded, 'Hiragino Maru Gothic ProN', 'Microsoft YaHei UI', sans-serif;
+}
+
+.app-footer--compact .app-footer__inner {
+  max-width: none;
+}
+
+.app-footer--compact .app-footer__note {
+  color: #2b2d42;
+  font-weight: 850;
+}
+
+.app-footer--compact .app-footer__disclaimer {
+  display: -webkit-box;
+  width: 100%;
+  max-width: none;
+  margin-top: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  color: #79665b;
+  font-size: 0.58rem;
+  line-height: 1.4;
+}
+
+.app-footer:not(.app-footer--compact) .app-footer__note {
+  color: #2b2d42;
+  font-weight: 850;
+}
+
+.app-footer:not(.app-footer--compact) .app-footer__inner {
+  width: min(68rem, 78vw);
+  margin-inline: auto;
+}
+
+.app-footer:not(.app-footer--compact) .app-footer__disclaimer {
+  max-width: none;
+  color: #79665b;
+  font-size: 0.58rem;
+}
+
+@media (max-width: 34rem) {
+  .app-footer:not(.app-footer--compact) .app-footer__inner {
+    width: 88vw;
+  }
+
+  .app-footer--compact {
+    font-size: 0.58rem;
+  }
+
+  .app-footer--compact .app-footer__inner {
+    gap: 0.18rem 0.5rem;
+    padding: 0.5rem 0.65rem;
+    border-width: 2px;
+    box-shadow: 3px 3px 0 #a7e9af;
+  }
+
+  .app-footer--compact .app-footer__disclaimer {
+    font-size: 0.5rem;
   }
 }
 </style>

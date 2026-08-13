@@ -96,7 +96,7 @@ watchEffect(() => {
 <template>
   <div class="articles-view page-shell">
     <aside class="articles-profile" aria-label="作者资料">
-      <BaseCard class="articles-profile__card" :hoverable="false">
+      <BaseCard class="articles-profile__card" variant="paper" :hoverable="false">
         <BaseAvatar
           :src="siteConfig.profile.avatar"
           :alt="siteConfig.profile.avatarAlt"
@@ -261,14 +261,19 @@ watchEffect(() => {
   justify-items: center;
   gap: 1.25rem;
   padding: 1.35rem;
+  border-radius: 1.1rem 0.8rem 1.35rem 0.75rem;
+  box-shadow: 0.55rem 0.7rem 0 rgb(255 183 178 / 14%), var(--paper-shadow);
   text-align: center;
+  transform: rotate(-1.1deg);
 }
 
 .articles-profile :deep(.base-avatar) {
   width: min(100%, 13rem);
   height: auto;
   aspect-ratio: 1;
-  border-radius: 1.5rem;
+  border: 0.55rem solid var(--paper-surface);
+  border-radius: 0.75rem 1rem 0.8rem 0.9rem;
+  box-shadow: 0.25rem 0.32rem 0 rgb(124 185 232 / 15%);
 }
 
 .articles-profile__identity p {
@@ -311,7 +316,7 @@ watchEffect(() => {
   border: 1px solid color-mix(in srgb, var(--social-accent), transparent 70%);
   border-radius: 0.78rem;
   background: color-mix(in srgb, var(--social-accent), transparent 88%);
-  color: var(--social-accent);
+  color: color-mix(in srgb, var(--social-accent) 50%, var(--anime-text));
   transition:
     transform var(--transition-fast),
     background var(--transition-fast);
@@ -362,7 +367,27 @@ watchEffect(() => {
 }
 
 .articles-archive {
+  position: relative;
   min-width: 0;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--paper-edge);
+  border-radius: 1rem 2.5rem 1.2rem 1.8rem;
+  background:
+    linear-gradient(90deg, transparent 2.8rem, rgb(255 149 188 / 13%) 2.8rem, rgb(255 149 188 / 13%) calc(2.8rem + 1px), transparent calc(2.8rem + 1px)),
+    repeating-linear-gradient(180deg, transparent 0, transparent 2.4rem, var(--paper-line) 2.4rem, var(--paper-line) calc(2.4rem + 1px)),
+    var(--paper-surface);
+  box-shadow: 0.75rem 0.9rem 0 rgb(124 185 232 / 12%), var(--paper-shadow);
+}
+
+.articles-archive::before {
+  position: absolute;
+  top: -1rem;
+  right: 3rem;
+  left: 3rem;
+  height: 2.1rem;
+  background: repeating-linear-gradient(90deg, transparent 0 3.4rem, color-mix(in srgb, var(--anime-muted) 65%, transparent) 3.4rem 3.75rem, transparent 3.75rem 4.2rem);
+  content: '';
+  clip-path: inset(0 round 0.4rem);
 }
 
 .articles-archive__header {
@@ -416,8 +441,8 @@ watchEffect(() => {
   gap: var(--space-3);
   padding-left: var(--space-4);
   border: 1px solid var(--anime-border-bright);
-  border-radius: 1rem;
-  background: rgb(var(--anime-glass-rgb) / var(--site-glass-opacity, 46%));
+  border-radius: var(--radius-round);
+  background: color-mix(in srgb, #7cb9e8 9%, var(--paper-surface));
   color: var(--anime-muted);
   backdrop-filter: blur(1rem);
 }
@@ -507,6 +532,11 @@ watchEffect(() => {
   font-family: var(--font-mono);
   font-size: var(--text-lg);
   letter-spacing: -0.03em;
+  text-decoration: underline;
+  text-decoration-color: rgb(253 253 150 / 65%);
+  text-decoration-thickness: 0.5em;
+  text-underline-offset: -0.32em;
+  text-decoration-skip-ink: none;
 }
 
 .articles-year__heading span {
@@ -548,19 +578,27 @@ watchEffect(() => {
   gap: 1.2rem;
   padding: 0.8rem;
   overflow: hidden;
-  border: 1px solid var(--anime-border-bright);
-  border-radius: 1.35rem;
-  background: rgb(var(--anime-glass-rgb) / var(--site-glass-opacity, 46%));
+  border: 1px solid var(--paper-edge);
+  border-radius: 0.55rem 1.35rem 0.72rem 1rem;
+  background:
+    repeating-linear-gradient(180deg, transparent 0, transparent 2rem, var(--paper-line) 2rem, var(--paper-line) calc(2rem + 1px)),
+    var(--paper-surface);
   color: var(--anime-text);
   box-shadow:
-    var(--anime-shadow),
-    inset 0 1px rgb(255 255 255 / 8%);
-  backdrop-filter: blur(1rem) saturate(120%);
-  -webkit-backdrop-filter: blur(1rem) saturate(120%);
+    0.35rem 0.42rem 0 color-mix(in srgb, var(--site-accent) 10%, transparent),
+    var(--anime-shadow);
   transition:
     transform var(--transition-normal),
     border-color var(--transition-normal),
     box-shadow var(--transition-normal);
+}
+
+.article-item:nth-child(odd) {
+  transform: rotate(-0.18deg);
+}
+
+.article-item:nth-child(even) {
+  transform: rotate(0.16deg);
 }
 
 .article-item__visual {
@@ -568,12 +606,15 @@ watchEffect(() => {
   min-height: 8.4rem;
   overflow: hidden;
   place-items: center;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 1rem;
+  padding: 0.25rem;
+  border: 1px dashed var(--paper-edge);
+  border-radius: 0.45rem;
   background:
     radial-gradient(circle at 28% 20%, rgb(255 255 255 / 20%), transparent 38%),
     linear-gradient(145deg, rgb(172 185 255 / 35%), rgb(242 166 206 / 22%));
   color: #edf0ff;
+  box-shadow: 0.2rem 0.24rem 0 color-mix(in srgb, var(--site-accent) 12%, transparent);
+  transform: rotate(-1.5deg);
 }
 
 .article-item__visual img {
@@ -665,7 +706,7 @@ watchEffect(() => {
   .article-item:hover {
     border-color: rgb(255 255 255 / 32%);
     box-shadow: 0 1.2rem 3.5rem rgb(3 7 24 / 32%);
-    transform: translateY(-0.22rem);
+    transform: translateY(-0.22rem) rotate(-0.35deg);
   }
 
   .article-item:hover .article-item__visual img {

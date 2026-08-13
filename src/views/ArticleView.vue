@@ -123,6 +123,9 @@ watchEffect(() => {
           :padded="false"
           variant="solid"
         >
+          <div class="article-view__rings" aria-hidden="true">
+            <i v-for="index in 8" :key="index"></i>
+          </div>
           <header class="article-view__header">
             <h1 id="article-title">{{ article.title }}</h1>
             <p class="article-view__description">{{ article.description }}</p>
@@ -258,15 +261,41 @@ watchEffect(() => {
 }
 
 .article-view__surface {
-  border-color: var(--anime-border);
-  background: var(--anime-glass-strong);
-  box-shadow: 0 0.8rem 3rem rgb(3 8 27 / 14%);
+  overflow: visible;
+  border-color: var(--paper-edge);
+  border-radius: 1.1rem 2.4rem 1.4rem 1.8rem;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--paper-line) 70%, transparent) 1px, transparent 1.2px) 0 0 / 18px 18px,
+    var(--paper-surface);
+  box-shadow: .75rem .9rem 0 rgb(124 185 232 / 12%), var(--paper-shadow);
+  transform: rotate(-.12deg);
+}
+
+.article-view__rings {
+  position: absolute;
+  z-index: 4;
+  top: -1rem;
+  right: 2.5rem;
+  left: 2.5rem;
+  display: flex;
+  justify-content: space-around;
+}
+
+.article-view__rings i {
+  width: .72rem;
+  height: 2.15rem;
+  border: 2px solid color-mix(in srgb, var(--anime-muted) 72%, transparent);
+  border-radius: var(--radius-round);
+  background: var(--paper-surface);
+  box-shadow: inset 0 0 .2rem rgb(45 28 53 / 18%);
 }
 
 .article-view__header {
   display: grid;
   gap: var(--space-4);
   padding: clamp(var(--space-5), 4vw, var(--space-8));
+  border-bottom: 1px dashed var(--paper-edge);
+  background: linear-gradient(135deg, rgb(255 183 178 / 11%), transparent 58%);
 }
 
 .article-view h1 {
@@ -277,6 +306,11 @@ watchEffect(() => {
   letter-spacing: -0.048em;
   line-height: 1.15;
   text-wrap: balance;
+  text-decoration: underline;
+  text-decoration-color: rgb(255 183 178 / 42%);
+  text-decoration-thickness: .22em;
+  text-underline-offset: -.12em;
+  text-decoration-skip-ink: none;
 }
 
 .article-view__description {
@@ -307,6 +341,10 @@ watchEffect(() => {
 
 .article-view__meta span,
 .article-view__meta a {
+  padding: .28rem .62rem;
+  border: 1px dashed color-mix(in srgb, var(--site-accent) 40%, var(--paper-edge));
+  border-radius: var(--radius-round);
+  background: color-mix(in srgb, var(--site-accent) 10%, var(--paper-surface));
   display: inline-flex;
   align-items: center;
   gap: 0.38rem;
@@ -387,7 +425,7 @@ watchEffect(() => {
 
 .article-view__body {
   padding: clamp(var(--space-6), 5vw, var(--space-10));
-  border-top: 1px solid var(--anime-border);
+  border-top: 0;
 }
 
 .article-view__toc {
@@ -402,8 +440,10 @@ watchEffect(() => {
   gap: var(--space-5);
   padding: var(--space-5) var(--space-6);
   border: 1px solid var(--anime-border);
-  border-radius: var(--radius-medium);
-  background: var(--anime-inner);
+  border-radius: .7rem 1.2rem .8rem 1rem;
+  background: color-mix(in srgb, #fdfd96 24%, var(--paper-surface));
+  box-shadow: .25rem .32rem 0 rgb(109 83 54 / 10%);
+  transform: rotate(.35deg);
 }
 
 .article-view__source p {
@@ -426,12 +466,19 @@ watchEffect(() => {
   align-content: center;
   padding: var(--space-5);
   border: 1px solid var(--anime-border);
-  border-radius: var(--radius-medium);
-  background: var(--anime-inner);
+  border-radius: .65rem 1.2rem .75rem 1rem;
+  background:
+    linear-gradient(90deg, transparent 1.3rem, rgb(255 143 184 / 16%) 1.3rem, rgb(255 143 184 / 16%) calc(1.3rem + 1px), transparent calc(1.3rem + 1px)),
+    repeating-linear-gradient(180deg, transparent 0, transparent 1.65rem, var(--paper-line) 1.65rem, var(--paper-line) calc(1.65rem + 1px)),
+    var(--paper-surface);
+  box-shadow: .28rem .35rem 0 rgb(124 185 232 / 12%);
   transition:
     border-color var(--transition-fast),
     transform var(--transition-fast);
 }
+
+.article-view__pager-link:first-of-type { transform: rotate(-.7deg); }
+.article-view__pager-link--next { transform: rotate(.65deg); }
 
 .article-view__pager-link--next {
   text-align: right;
@@ -465,7 +512,7 @@ watchEffect(() => {
 
   .article-view__pager-link:hover {
     border-color: var(--anime-border-bright);
-    transform: translateY(-0.15rem);
+    transform: translateY(-0.35rem) rotate(-1deg) scale(1.015);
   }
 }
 

@@ -1,4 +1,5 @@
 html {
+  overflow-x: clip;
   background: var(--color-background);
 }
 body {
@@ -60,6 +61,12 @@ button {
   letter-spacing: 0.1em;
   line-height: 1.4;
   text-transform: uppercase;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
 }
 
 .skip-link {

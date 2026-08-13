@@ -39,7 +39,13 @@ const isInternal = (href: string) => href.startsWith('/')
       </div>
 
       <div class="navigation-view__grid">
-        <BaseCard v-for="item in siteLinks" :key="item.id" class="navigation-card" hoverable>
+        <BaseCard
+          v-for="item in siteLinks"
+          :key="item.id"
+          class="navigation-card"
+          variant="paper"
+          hoverable
+        >
           <RouterLink v-if="isInternal(item.href)" class="navigation-card__link" :to="item.href">
             <span class="navigation-card__icon" :style="{ '--card-accent': item.accent }">
               <ConfigIcon :name="item.icon" :provider="item.iconProvider" :size="23" />
@@ -85,7 +91,13 @@ const isInternal = (href: string) => href.startsWith('/')
       </div>
 
       <div class="navigation-view__grid navigation-view__grid--projects">
-        <BaseCard v-for="project in projects" :key="project.id" class="navigation-card" hoverable>
+        <BaseCard
+          v-for="project in projects"
+          :key="project.id"
+          class="navigation-card"
+          variant="paper"
+          hoverable
+        >
           <a class="navigation-card__link" :href="project.href" target="_blank" rel="noreferrer">
             <span class="navigation-card__icon" :style="{ '--card-accent': project.accent }">
               <ConfigIcon :name="project.icon" :provider="project.iconProvider" :size="23" />
@@ -124,6 +136,11 @@ const isInternal = (href: string) => href.startsWith('/')
   font-size: 0.73rem;
   font-weight: 800;
   letter-spacing: 0.18em;
+  padding: 0.45rem 0.85rem;
+  border: 1px dashed color-mix(in srgb, var(--site-accent) 42%, transparent);
+  border-radius: 0.35rem;
+  background: var(--tape-surface);
+  transform: rotate(-1.5deg);
 }
 
 .navigation-view__hero h1 {
@@ -148,11 +165,25 @@ const isInternal = (href: string) => href.startsWith('/')
 }
 
 .navigation-view__heading {
+  position: relative;
   display: flex;
   align-items: end;
   justify-content: space-between;
   padding-inline: 0.25rem;
   color: var(--anime-accent-soft);
+}
+
+.navigation-view__heading::after {
+  position: absolute;
+  bottom: -0.4rem;
+  left: 0;
+  width: min(12rem, 35%);
+  height: 0.45rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--site-accent) 35%, transparent);
+  content: '';
+  filter: blur(0.07rem);
+  transform: rotate(-1deg);
 }
 
 .navigation-view__heading span {
@@ -183,7 +214,20 @@ const isInternal = (href: string) => href.startsWith('/')
   overflow: hidden;
 }
 
+.navigation-card:nth-child(3n + 1) {
+  transform: rotate(-0.45deg);
+}
+
+.navigation-card:nth-child(3n + 2) {
+  transform: rotate(0.35deg);
+}
+
+.navigation-card:nth-child(3n) {
+  transform: rotate(-0.15deg);
+}
+
 .navigation-card__link {
+  position: relative;
   display: grid;
   min-height: 7.75rem;
   grid-template-columns: auto 1fr auto;
@@ -193,16 +237,34 @@ const isInternal = (href: string) => href.startsWith('/')
   color: var(--anime-text);
 }
 
+.navigation-card__link::after {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.55rem;
+  width: 2.7rem;
+  height: 2.7rem;
+  border: 1px dashed color-mix(in srgb, var(--card-accent, var(--site-accent)) 30%, var(--paper-edge));
+  border-radius: 50%;
+  content: '';
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 .navigation-card__icon {
   display: grid;
   width: 3.2rem;
   height: 3.2rem;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--card-accent, var(--site-accent)), transparent 68%);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--card-accent, var(--site-accent)), transparent 85%);
-  color: var(--card-accent, var(--site-accent));
+  border: 1px dashed color-mix(in srgb, var(--card-accent, var(--site-accent)), transparent 52%);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--card-accent, var(--site-accent)) 12%, var(--paper-surface));
+  color: color-mix(
+    in srgb,
+    var(--card-accent, var(--site-accent)) 50%,
+    var(--anime-text)
+  );
   box-shadow: inset 0 1px rgb(255 255 255 / 12%);
+  transform: rotate(-5deg);
 }
 
 .navigation-card__copy {
@@ -243,6 +305,10 @@ const isInternal = (href: string) => href.startsWith('/')
 
   .navigation-card__link {
     min-height: 6.75rem;
+  }
+
+  .navigation-card {
+    transform: none !important;
   }
 }
 </style>

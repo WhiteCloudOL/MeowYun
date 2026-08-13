@@ -40,7 +40,9 @@ withDefaults(
 
 @media (hover: hover) {
   .base-icon-button:hover {
+    border-color: color-mix(in srgb, var(--site-accent) 34%, var(--anime-border));
     background: var(--color-primary-soft);
+    transform: translateY(-0.1rem) rotate(5deg);
   }
 }
 </style>

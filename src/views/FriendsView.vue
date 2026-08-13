@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import BaseCard from '@/components/ui/BaseCard.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
 import type { FriendLinkItem } from '@/config/schema'
 import { siteConfig } from '@/config/site'
@@ -39,7 +38,7 @@ function friendIcon(friend: FriendLinkItem) {
       <p>{{ siteConfig.friendsPage.description }}</p>
     </header>
 
-    <BaseCard class="friends-view__panel" :hoverable="false">
+    <section class="friends-view__panel" aria-label="友链列表与申请方式">
       <div v-if="friends.length" class="friends-grid">
         <a
           v-for="friend in friends"
@@ -86,7 +85,7 @@ function friendIcon(friend: FriendLinkItem) {
           </a>
         </div>
       </div>
-    </BaseCard>
+    </section>
   </div>
 </template>
 
@@ -98,12 +97,34 @@ function friendIcon(friend: FriendLinkItem) {
 }
 
 .friends-view__hero {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: var(--space-3);
   color: var(--anime-text);
   text-align: center;
   text-shadow: 0 0.2rem 1.4rem rgb(1 5 18 / 55%);
+}
+
+.friends-view__hero::before,
+.friends-view__hero::after {
+  position: absolute;
+  color: color-mix(in srgb, var(--site-accent) 68%, var(--anime-text));
+  content: '✿';
+  font-size: clamp(1rem, 2vw, 1.4rem);
+  opacity: 0.72;
+}
+
+.friends-view__hero::before {
+  top: 18%;
+  left: clamp(3%, 14vw, 18%);
+  transform: rotate(-14deg);
+}
+
+.friends-view__hero::after {
+  right: clamp(3%, 14vw, 18%);
+  bottom: 12%;
+  transform: rotate(12deg) scale(0.75);
 }
 
 .friends-view__icon {
@@ -113,14 +134,16 @@ function friendIcon(friend: FriendLinkItem) {
   margin-bottom: var(--space-3);
   place-items: center;
   border: 1px solid var(--anime-border-bright);
-  border-radius: 1.4rem;
-  background: var(--anime-glass);
-  box-shadow: var(--anime-shadow), inset 0 1px 0 rgb(255 255 255 / 10%);
+  border-style: dashed;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--site-accent) 16%, var(--paper-surface));
+  box-shadow: 0.3rem 0.35rem 0 color-mix(in srgb, var(--site-accent) 18%, transparent);
   backdrop-filter: blur(1rem);
+  transform: rotate(-5deg);
 }
 
 .friends-view__eyebrow {
-  color: #e0e6ff;
+  color: var(--anime-accent-soft);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   letter-spacing: 0.1em;
@@ -128,10 +151,25 @@ function friendIcon(friend: FriendLinkItem) {
 }
 
 .friends-view h1 {
+  position: relative;
+  z-index: 0;
   font-size: clamp(3rem, 7vw, 6rem);
   font-weight: 850;
   letter-spacing: -0.075em;
   line-height: 1;
+}
+
+.friends-view h1::after {
+  position: absolute;
+  z-index: -1;
+  right: 4%;
+  bottom: 0.04em;
+  left: 4%;
+  height: 0.22em;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgb(255 133 184 / 62%), transparent);
+  content: '';
+  transform: rotate(-1deg);
 }
 
 .friends-view__hero > p:last-child {
@@ -145,32 +183,59 @@ function friendIcon(friend: FriendLinkItem) {
 
 .friends-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   gap: var(--space-4);
 }
 
 .friend-card {
+  position: relative;
   display: grid;
   min-height: 6.5rem;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--anime-border);
-  border-radius: var(--radius-medium);
-  background: var(--anime-inner);
+  padding: 1.15rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--friend-color) 36%, var(--paper-edge));
+  border-radius: 0.75rem 1.2rem 0.65rem 1rem;
+  background: color-mix(in srgb, var(--friend-color) 8%, var(--paper-surface-alt));
+  box-shadow: 0.25rem 0.3rem 0 color-mix(in srgb, var(--friend-color) 12%, transparent);
   transition:
     transform var(--transition-press),
     background-color var(--transition-fast),
     border-color var(--transition-fast);
 }
 
+.friend-card:nth-child(odd) {
+  transform: rotate(-0.45deg);
+}
+
+.friend-card:nth-child(even) {
+  transform: rotate(0.4deg);
+}
+
+.friend-card::before {
+  position: absolute;
+  top: -0.45rem;
+  left: 1.2rem;
+  width: 2.8rem;
+  height: 0.8rem;
+  background: color-mix(in srgb, var(--friend-color) 42%, transparent);
+  clip-path: polygon(5% 10%, 96% 0, 100% 88%, 0 100%);
+  content: '';
+  opacity: 0.58;
+  transform: rotate(-2deg);
+}
+
 .friend-card img,
 .friend-card__fallback {
   width: 3rem;
   height: 3rem;
-  border: 2px solid color-mix(in srgb, var(--friend-color) 65%, white);
-  border-radius: 50%;
+  padding: 0.18rem;
+  border: 1px dashed color-mix(in srgb, var(--friend-color) 58%, var(--anime-text));
+  border-radius: 0.55rem;
+  background: var(--paper-surface);
+  transform: rotate(-3deg);
 }
 
 .friend-card img {
@@ -181,7 +246,7 @@ function friendIcon(friend: FriendLinkItem) {
   display: grid;
   place-items: center;
   background: color-mix(in srgb, var(--friend-color) 20%, transparent);
-  color: #ffffff;
+  color: color-mix(in srgb, var(--friend-color) 50%, var(--anime-text));
   font-weight: 800;
 }
 
@@ -206,8 +271,14 @@ function friendIcon(friend: FriendLinkItem) {
   display: flex;
   align-items: flex-start;
   gap: var(--space-4);
-  padding-top: var(--space-8);
-  border-top: 1px solid var(--anime-border);
+  padding: var(--space-5);
+  border: 1px dashed var(--paper-edge);
+  border-radius: 0.75rem 1rem 0.65rem 0.95rem;
+  background:
+    repeating-linear-gradient(180deg, transparent 0, transparent 1.8rem, var(--paper-line) 1.8rem, var(--paper-line) calc(1.8rem + 1px)),
+    color-mix(in srgb, var(--site-accent) 6%, var(--paper-surface));
+  box-shadow: var(--paper-shadow);
+  transform: rotate(-0.22deg);
 }
 
 .friends-view__apply > span {
@@ -218,7 +289,7 @@ function friendIcon(friend: FriendLinkItem) {
   place-items: center;
   border-radius: var(--radius-small);
   background: rgb(222 230 255 / 10%);
-  color: #cad5ff;
+  color: var(--anime-accent-soft);
 }
 
 .friends-view__apply h2 {
@@ -255,8 +326,8 @@ function friendIcon(friend: FriendLinkItem) {
 @media (hover: hover) {
   .friend-card:hover {
     border-color: var(--anime-border-bright);
-    background: rgb(22 31 69 / 50%);
-    transform: translateY(-0.2rem);
+    background: color-mix(in srgb, var(--friend-color) 13%, var(--paper-surface-alt));
+    transform: translateY(-0.25rem) rotate(-1deg);
   }
 }
 

@@ -35,11 +35,12 @@ onBeforeUnmount(() => observer?.disconnect())
 
 <style scoped>
 .reveal-block {
+  min-width: 0;
   opacity: 0;
-  transform: translateY(1.75rem) scale(0.995);
+  transform: translateY(1.8rem) scale(0.97) rotate(0.35deg);
   transition:
-    opacity 600ms ease,
-    transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity 620ms var(--ease-spring),
+    transform 760ms var(--ease-spring-bold);
 }
 
 .reveal-block--visible {

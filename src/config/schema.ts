@@ -82,6 +82,10 @@ export interface PageBackground {
   autoPan: boolean
 }
 
+export type HomeSceneBackgrounds = Partial<
+  Record<'hero' | 'showcase' | 'status', Partial<PageBackground>>
+>
+
 export interface SiteConfig {
   meta: {
     name: string
@@ -98,10 +102,14 @@ export interface SiteConfig {
     globalBackground: PageBackground
     lightBackground?: Partial<PageBackground>
     homeBackground?: Partial<PageBackground>
+    /** 首页三段场景可分别覆盖底图；未填写的属性继续继承 homeBackground 与全局背景。 */
+    homeSceneBackgrounds?: HomeSceneBackgrounds
     friendsBackground?: Partial<PageBackground>
     contentBackground?: Partial<PageBackground>
     readingBackground?: Partial<PageBackground>
     lightReadingBackground?: Partial<PageBackground>
+    /** 全站樱花飘落装饰；关闭后不挂载粒子节点。 */
+    sakuraEffect?: boolean
     themeToggle: boolean
   }
   navigation: NavigationItem[]

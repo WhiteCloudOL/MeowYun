@@ -4,12 +4,14 @@ import { useRoute } from 'vue-router'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import ImmersiveBackground from '@/components/layout/ImmersiveBackground.vue'
+import SakuraFall from '@/components/layout/SakuraFall.vue'
 import { siteConfig } from '@/config/site'
 import type { PageBackground } from '@/config/schema'
 import { useTheme } from '@/composables/useTheme'
 
 const route = useRoute()
 const { isDark } = useTheme()
+const isHome = computed(() => route.name === 'home')
 
 const pageBackground = computed(() => {
   const globalBackground = siteConfig.appearance.globalBackground
@@ -50,11 +52,16 @@ const appStyle = computed(() => ({
 </script>
 
 <template>
-  <div class="app-layout" :style="appStyle">
+  <div class="app-layout" :class="{ 'app-layout--home': isHome }" :style="appStyle">
     <a class="skip-link" href="#main-content">跳到主要内容</a>
     <Transition name="background-shift">
-      <ImmersiveBackground :key="pageBackgroundKey" :config="pageBackground" />
+      <ImmersiveBackground
+        :key="pageBackgroundKey"
+        :config="pageBackground"
+        :cinematic="isHome"
+      />
     </Transition>
+    <SakuraFall v-if="siteConfig.appearance.sakuraEffect" />
     <AppHeader />
 
     <main id="main-content">
@@ -65,7 +72,7 @@ const appStyle = computed(() => ({
       </RouterView>
     </main>
 
-    <AppFooter v-if="siteConfig.footer.enabled" />
+    <AppFooter v-if="siteConfig.footer.enabled && !isHome" />
   </div>
 </template>
 
@@ -81,5 +88,12 @@ const appStyle = computed(() => ({
   z-index: 1;
   min-height: 65vh;
   perspective: 80rem;
+}
+
+.app-layout--home,
+.app-layout--home #main-content {
+  height: 100dvh;
+  min-height: 32rem;
+  overflow: hidden;
 }
 </style>

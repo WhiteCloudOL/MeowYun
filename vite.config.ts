@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 const projectPath = (path: string) => fileURLToPath(new URL(path, import.meta.url))
@@ -358,7 +359,7 @@ function deploymentFilesPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools(), seoFilesPlugin(), deploymentFilesPlugin()],
+  plugins: [tailwindcss(), vue(), vueDevTools(), seoFilesPlugin(), deploymentFilesPlugin()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

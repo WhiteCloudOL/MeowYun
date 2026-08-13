@@ -17,9 +17,10 @@ withDefaults(
   min-height: 1.9rem;
   align-items: center;
   padding: 0.3rem 0.7rem;
-  border: 1px solid var(--color-border-soft);
+  border: 1px dashed var(--paper-edge);
   border-radius: var(--radius-round);
-  background: rgb(220 229 255 / 9%);
+  background: var(--paper-surface-alt);
+  box-shadow: 0.12rem 0.14rem 0 color-mix(in srgb, var(--site-accent) 10%, transparent);
   color: var(--anime-text-soft);
   font-size: var(--text-xs);
   font-weight: 650;

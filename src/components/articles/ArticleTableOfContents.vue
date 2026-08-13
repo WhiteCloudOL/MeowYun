@@ -161,11 +161,24 @@ onBeforeUnmount(() => {
   min-width: 0;
   padding: var(--space-4);
   border: 1px solid var(--anime-border);
-  border-radius: 1.15rem;
-  background: rgb(var(--anime-glass-rgb) / calc(var(--site-glass-opacity, 46%) + 10%));
-  box-shadow: 0 0.75rem 2.5rem rgb(3 8 27 / 14%);
+  border-radius: .8rem 1.4rem .9rem 1.1rem;
+  background: color-mix(in srgb, #b4f8c8 12%, var(--paper-surface));
+  box-shadow: .35rem .45rem 0 rgb(124 185 232 / 13%), 0 .75rem 2.5rem rgb(3 8 27 / 14%);
   color: var(--anime-muted);
   backdrop-filter: blur(1rem) saturate(118%);
+  transform: rotate(.45deg);
+}
+
+.article-toc::before {
+  position: absolute;
+  top: -.7rem;
+  right: 1.2rem;
+  width: 2rem;
+  height: 3rem;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+  background: #ff9fc6;
+  content: '';
+  opacity: .78;
 }
 
 .article-toc__header {
@@ -267,6 +280,14 @@ onBeforeUnmount(() => {
   background: var(--site-accent);
   box-shadow: 0 0 0.6rem color-mix(in srgb, var(--site-accent) 65%, transparent);
   transform: scale(1.18);
+}
+
+.article-toc__list a.is-active .article-toc__dot::after {
+  display: block;
+  margin: -.55rem 0 0 -.28rem;
+  color: var(--site-accent);
+  content: '★';
+  font-size: .75rem;
 }
 
 @media (hover: hover) {

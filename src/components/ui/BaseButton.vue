@@ -73,9 +73,9 @@ function preventDisabled(event: Event) {
 }
 
 .base-button--primary {
-  background: var(--color-text);
-  box-shadow: 0 0.4rem 1.1rem rgb(63 53 60 / 14%);
-  color: var(--color-background);
+  background: linear-gradient(135deg, var(--color-primary), #d986c7);
+  box-shadow: 0 0.5rem 1.2rem rgb(217 95 147 / 24%);
+  color: #ffffff;
 }
 
 .base-button--secondary {
@@ -101,8 +101,8 @@ function preventDisabled(event: Event) {
 
 @media (hover: hover) {
   .base-button--primary:hover {
-    box-shadow: 0 0.55rem 1.4rem rgb(63 53 60 / 20%);
-    transform: translateY(-0.1rem);
+    box-shadow: 0 0.65rem 1.5rem rgb(217 95 147 / 32%);
+    transform: translateY(-0.14rem) rotate(-0.5deg);
   }
 
   .base-button--secondary:hover,

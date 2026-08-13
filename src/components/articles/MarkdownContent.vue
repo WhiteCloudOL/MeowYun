@@ -69,6 +69,22 @@ onBeforeUnmount(() => {
   line-height: 1.3;
 }
 
+.markdown-content :deep(h2)::before,
+.markdown-content :deep(h3)::before {
+  display: inline-grid;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: .45em;
+  place-items: center;
+  border-radius: 50% 42% 48% 45%;
+  background: rgb(255 183 178 / 25%);
+  color: var(--site-accent);
+  content: '✦';
+  font-size: .55em;
+  vertical-align: .18em;
+  transform: rotate(-8deg);
+}
+
 .markdown-content :deep(h1),
 .markdown-content :deep(h2) {
   padding-top: var(--space-8);
@@ -142,11 +158,13 @@ onBeforeUnmount(() => {
 
 .markdown-content :deep(blockquote) {
   padding: var(--space-5) var(--space-6);
-  border-left: 0.25rem solid var(--color-primary);
-  border-radius: 0 var(--radius-medium) var(--radius-medium) 0;
-  background: var(--color-primary-soft);
+  border: 1px solid color-mix(in srgb, #fdfd96 42%, var(--paper-edge));
+  border-radius: .55rem 1rem .65rem .85rem;
+  background: color-mix(in srgb, #fdfd96 28%, var(--paper-surface));
+  box-shadow: .28rem .34rem 0 rgb(116 85 47 / 10%);
   color: var(--anime-text);
   font-weight: 600;
+  transform: rotate(-.35deg);
 }
 
 .markdown-content :deep(hr) {
@@ -199,9 +217,9 @@ onBeforeUnmount(() => {
 .markdown-content :deep(.markdown-code) {
   overflow: hidden;
   border: 1px solid var(--anime-border);
-  border-radius: var(--radius-medium);
-  background: rgb(6 11 31 / 76%);
-  box-shadow: var(--shadow-card);
+  border-radius: .9rem 1.2rem .8rem 1rem;
+  background: #17203a;
+  box-shadow: .35rem .45rem 0 rgb(124 185 232 / 15%), var(--shadow-card);
 }
 
 .markdown-content :deep(.markdown-code__toolbar) {
@@ -214,6 +232,12 @@ onBeforeUnmount(() => {
   color: #aeb9d8;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+}
+
+.markdown-content :deep(.markdown-code__toolbar)::before {
+  color: #ff8ead;
+  content: '●  ●  ●';
+  letter-spacing: .28rem;
 }
 
 .markdown-content :deep(.markdown-code__copy) {

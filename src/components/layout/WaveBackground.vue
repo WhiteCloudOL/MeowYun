@@ -40,7 +40,7 @@
   bottom: -4%;
   width: min(112rem, 180vw);
   height: clamp(11rem, 36vh, 27rem);
-  animation: ribbon-drift 16s ease-in-out infinite alternate;
+  animation: ribbon-drift 16s var(--ease-spring) infinite alternate;
   opacity: 0.14;
   transform-origin: 70% 100%;
 }
