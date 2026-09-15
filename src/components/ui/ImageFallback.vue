@@ -9,6 +9,7 @@ const props = withDefaults(
     icon?: SiteIcon
     loading?: 'lazy' | 'eager'
     fit?: 'cover' | 'contain'
+    position?: string
   }>(),
   { icon: 'cloud', loading: 'lazy', fit: 'cover' },
 )
@@ -27,7 +28,7 @@ watch(
       :src="src"
       :alt="alt"
       :loading="loading"
-      :style="{ objectFit: fit }"
+      :style="{ objectFit: fit, objectPosition: position }"
       @error="failed = true"
     />
     <span v-else class="image-fallback__placeholder" role="img" :aria-label="alt"

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { siteConfig } from '@/config/site'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
+import DatePicker from '@/components/ui/DatePicker.vue'
+import { vTooltip } from '@/utils/tooltip'
 import { contributionWindow, parseContributions, type ContributionDay } from '@/utils/contributions'
 withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 const config = siteConfig.sections.contributions
@@ -47,6 +49,9 @@ async function load() {
     days.value = nextDays
     selected.value = nextDays.at(-1)?.date ?? ''
     state.value = 'live'
+    await nextTick()
+    // 全年保持可读格子，默认露出最近记录；历史仍可通过横向滚动与日期输入访问。
+    if (viewport.value) viewport.value.scrollLeft = viewport.value.scrollWidth
   } catch {
     if (disposed || request !== controller) return
     days.value = []
@@ -107,6 +112,7 @@ onBeforeUnmount(() => {
             ><span>五</span><span>六</span>
           </div>
           <div
+            v-tooltip
             class="contribution-grid"
             role="img"
             :aria-label="'公开贡献热力图，' + total + ' 次贡献。可在下方按日期查询。'"
@@ -116,20 +122,25 @@ onBeforeUnmount(() => {
               :key="date"
               :data-date="date"
               :data-level="dayMap.get(date)?.level ?? 'unknown'"
-              :title="
+              :data-tooltip="
                 date + ' · ' + (dayMap.has(date) ? dayMap.get(date)?.count + ' 次贡献' : '暂无记录')
               "
             ></i>
           </div>
         </div>
       </div>
+      <div class="contribution-legend" aria-label="贡献强度从少到多，虚线表示缺失数据">
+        <span>少</span
+        ><i v-for="level in [0, 1, 2, 3, 4]" :key="level" :data-level="level" aria-hidden="true"></i
+        ><span>多</span><i data-level="unknown" aria-hidden="true"></i><span>暂无记录</span>
+      </div>
       <div class="contribution-detail">
         <label for="contribution-date">查看日期</label
-        ><input
+        ><DatePicker
           id="contribution-date"
           v-model="selected"
-          type="date"
-          :min="days[0]?.date"
+          label="查看贡献日期"
+          :min="days[0]?.date ?? end"
           :max="end"
         /><output for="contribution-date" aria-live="polite">{{
           detail ? detail.count + ' 次贡献' : '该日期暂无记录'
@@ -212,25 +223,39 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 3px;
 }
-.contribution-grid i {
+.contribution-grid i,
+.contribution-legend i {
   border-radius: 2px;
-  background: var(--color-border-soft);
+  background: var(--contribution-0);
 }
-.contribution-grid [data-level='1'] {
-  background: var(--color-secondary);
+.contribution-calendar [data-level='1'] {
+  background: var(--contribution-1);
 }
-.contribution-grid [data-level='2'] {
-  background: color-mix(in srgb, var(--color-success) 45%, var(--color-secondary));
+.contribution-calendar [data-level='2'] {
+  background: var(--contribution-2);
 }
-.contribution-grid [data-level='3'] {
-  background: color-mix(in srgb, var(--color-success) 75%, var(--color-secondary));
+.contribution-calendar [data-level='3'] {
+  background: var(--contribution-3);
 }
-.contribution-grid [data-level='4'] {
-  background: var(--color-success);
+.contribution-calendar [data-level='4'] {
+  background: var(--contribution-4);
 }
-.contribution-grid [data-level='unknown'] {
+.contribution-calendar [data-level='unknown'] {
   background: transparent;
   border: 1px dashed var(--color-border);
+}
+.contribution-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block: 0.5rem 1rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+.contribution-legend i {
+  width: 12px;
+  height: 12px;
 }
 .contribution-detail {
   display: flex;
@@ -238,15 +263,6 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   font-size: var(--text-sm);
-}
-.contribution-detail input {
-  min-height: var(--tap-size);
-  min-width: 0;
-  max-width: 100%;
-  border: 1px solid var(--color-border);
-  background: var(--color-background);
-  border-radius: var(--radius-small);
-  padding: 0.4rem;
 }
 .contribution-footnote {
   margin-top: 1rem;

@@ -70,6 +70,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.4rem;
   min-height: var(--tap-size);
+  min-width: var(--tap-size);
+  justify-content: center;
   padding: 0.5rem 0.7rem;
   border: 0;
   border-radius: var(--radius-round);

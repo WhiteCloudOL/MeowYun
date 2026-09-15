@@ -4,12 +4,18 @@ import IconGlyph from '@/components/ui/IconGlyph.vue'
 const props = defineProps<{ html: string }>()
 const rendered = ref<HTMLElement>()
 const lightbox = ref<HTMLDialogElement>()
+const copyDialog = ref<HTMLDialogElement>()
+const copyField = ref<HTMLTextAreaElement>()
 const preview = ref<{ src: string; alt: string }>()
 const status = ref('')
 const manualCode = ref('')
 const resets = new Map<HTMLButtonElement, ReturnType<typeof setTimeout>>()
 let opener: HTMLElement | undefined
+let copyOpener: HTMLButtonElement | undefined
 let alive = true
+let generation = 0
+let copyRequest = 0
+const buttonRequests = new WeakMap<HTMLButtonElement, number>()
 async function handleClick(event: MouseEvent) {
   const target = event.target
   if (!(target instanceof Element)) return
@@ -26,19 +32,31 @@ async function handleClick(event: MouseEvent) {
   }
   const button = target.closest<HTMLButtonElement>('[data-code-copy]')
   if (!button) return
+  const request = ++copyRequest
+  const contentGeneration = generation
+  buttonRequests.set(button, request)
   const code = button.closest('.markdown-code')?.querySelector('code')?.textContent ?? ''
   if (resets.has(button)) clearTimeout(resets.get(button))
   manualCode.value = ''
   try {
     await navigator.clipboard.writeText(code)
-    if (!alive) return
+    if (!alive || contentGeneration !== generation || buttonRequests.get(button) !== request) return
     button.textContent = '已复制'
     status.value = '代码已复制到剪贴板'
   } catch {
-    if (!alive) return
+    if (!alive || contentGeneration !== generation || buttonRequests.get(button) !== request) return
     button.textContent = '复制失败'
-    status.value = '无法自动复制，请在下方选择代码手动复制。'
-    manualCode.value = code
+    // 失败操作留在当前视口；仅最新请求打开对话框，旧响应不能抢走焦点。
+    if (request === copyRequest) {
+      status.value = '无法自动复制，已打开手动复制窗口。'
+      copyOpener = button
+      manualCode.value = code
+      await nextTick()
+      if (!alive || contentGeneration !== generation) return
+      copyDialog.value?.showModal()
+      copyField.value?.focus()
+      copyField.value?.select()
+    }
   }
   // 每个代码按钮独立复位；连续复制多个块不会取消前一个按钮的反馈计时器。
   resets.set(
@@ -53,10 +71,12 @@ function imageError(event: Event) {
   const img = event.target
   if (!(img instanceof HTMLImageElement)) return
   img.hidden = true
-  const parent = img.closest<HTMLButtonElement>('[data-image-view]')
+  const parent = img.closest<HTMLElement>('.markdown-image')
   if (parent) {
-    parent.disabled = true
+    if (parent instanceof HTMLButtonElement) parent.disabled = true
+    if (parent.querySelector('.markdown-image__error')) return
     const message = document.createElement('span')
+    message.className = 'markdown-image__error'
     message.textContent = '图片暂时无法显示' + (img.alt ? '：' + img.alt : '')
     parent.append(message)
   }
@@ -65,6 +85,13 @@ function enhance() {
   // 仅增强受控 Markdown 输出：DOM API 插入按钮/区域，不拼接未经转义的用户 HTML。
   for (const img of rendered.value?.querySelectorAll('img') ?? []) {
     if (img.closest('[data-image-view]')) continue
+    // 已有图片链接保留导航意图，不在 a 内再插入按钮。链接的失败说明也必须可读。
+    const link = img.closest('a')
+    if (link) {
+      link.classList.add('markdown-image')
+      if (img.complete && !img.naturalWidth) imageError({ target: img } as unknown as Event)
+      continue
+    }
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset.imageView = ''
@@ -88,11 +115,17 @@ function enhance() {
     pre.tabIndex = 0
     pre.setAttribute('aria-label', '代码，可横向滚动')
   }
+  rendered.value?.querySelectorAll('[data-code-copy]').forEach((button, index) => {
+    button.setAttribute('aria-label', `复制第 ${index + 1} 段代码`)
+  })
 }
 onMounted(enhance)
 watch(
   () => props.html,
   async () => {
+    generation++
+    copyDialog.value?.close()
+    lightbox.value?.close()
     for (const timer of resets.values()) clearTimeout(timer)
     resets.clear()
     status.value = ''
@@ -112,14 +145,36 @@ onBeforeUnmount(() => {
     <!-- 仅渲染仓库 Markdown 经 html:false 的 MarkdownIt 转义后的结果；不接受运行时任意 HTML。 --><!-- eslint-disable-next-line vue/no-v-html -->
     <div ref="rendered" class="markdown-rendered" v-html="html"></div>
     <p v-if="status" class="markdown-status" role="status">{{ status }}</p>
-    <textarea
-      v-if="manualCode"
-      class="manual-code"
-      :value="manualCode"
-      readonly
-      aria-label="手动复制代码"
-      @focus="($event.target as HTMLTextAreaElement).select()"
-    ></textarea>
+    <dialog
+      ref="copyDialog"
+      class="image-dialog copy-dialog"
+      aria-labelledby="manual-copy-title"
+      @close="copyOpener?.isConnected && copyOpener.focus()"
+      @click="
+        (event) => {
+          if (event.target === copyDialog) copyDialog?.close()
+        }
+      "
+    >
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="关闭手动复制"
+        @click="copyDialog?.close()"
+      >
+        <IconGlyph name="x" />
+      </button>
+      <h2 id="manual-copy-title">手动复制代码</h2>
+      <p>浏览器未允许自动复制。选择下面的代码，使用复制快捷键或长按复制。</p>
+      <textarea
+        ref="copyField"
+        class="manual-code"
+        :value="manualCode"
+        readonly
+        aria-label="手动复制代码"
+        @focus="($event.target as HTMLTextAreaElement).select()"
+      ></textarea>
+    </dialog>
     <dialog
       ref="lightbox"
       class="image-dialog"
@@ -135,6 +190,14 @@ onBeforeUnmount(() => {
         <IconGlyph name="x" /></button
       ><img v-if="preview" :src="preview.src" :alt="preview.alt" />
       <p v-if="preview?.alt">{{ preview.alt }}</p>
+      <a
+        v-if="preview"
+        class="text-link"
+        :href="preview.src"
+        target="_blank"
+        rel="noopener noreferrer"
+        >打开原图 <IconGlyph name="arrow-up-right" :size="16"
+      /></a>
     </dialog>
   </div>
 </template>
@@ -202,7 +265,29 @@ onBeforeUnmount(() => {
 }
 .markdown-content :deep(.task-list-item-checkbox) {
   margin-right: 0.5rem;
-  accent-color: var(--color-link);
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  vertical-align: -0.15em;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 0.25rem;
+  background: var(--color-surface);
+  opacity: 1;
+  cursor: default;
+}
+.markdown-content :deep(.task-list-item-checkbox:checked) {
+  border-color: var(--color-link);
+  background: var(--color-primary-soft);
+}
+.markdown-content :deep(.task-list-item-checkbox:checked)::after {
+  content: '';
+  width: 0.6rem;
+  height: 0.35rem;
+  border: solid var(--color-link);
+  border-width: 0 0 2px 2px;
+  transform: translateY(-1px) rotate(-45deg);
 }
 .markdown-content :deep(blockquote) {
   padding: 1rem 1.5rem;
@@ -251,8 +336,10 @@ onBeforeUnmount(() => {
 .markdown-content :deep(.markdown-image img) {
   display: block;
   max-width: 100%;
-  width: auto;
+  width: 100%;
   height: auto;
+  /* 远端图片尺寸未知时预留温和比例；加载后使用固有比例，不裁切技术信息。 */
+  aspect-ratio: auto 16 / 9;
   margin-inline: auto;
   object-fit: contain;
 }
@@ -352,6 +439,16 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-medium);
   background: var(--color-surface);
   color: var(--color-text);
+  overscroll-behavior: contain;
+}
+.copy-dialog {
+  width: min(38rem, calc(100vw - 2rem));
+}
+.copy-dialog h2 {
+  font-size: var(--text-lg);
+}
+.copy-dialog .manual-code {
+  height: min(45dvh, 20rem);
 }
 .image-dialog::backdrop {
   background: rgb(20 15 25 / 70%);

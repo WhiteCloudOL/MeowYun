@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
+import SearchField from '@/components/ui/SearchField.vue'
 import { quickSearch } from '@/utils/search'
 const dialog = ref<HTMLDialogElement>()
-const input = ref<HTMLInputElement>()
+const input = ref<InstanceType<typeof SearchField>>()
 const query = ref('')
 const results = computed(() => quickSearch(query.value))
 const groups = computed(() =>
@@ -15,6 +16,7 @@ let previousFocus: HTMLElement | null = null
 async function open() {
   if (dialog.value?.open) return
   previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  document.dispatchEvent(new CustomEvent('meowyun:popover', { detail: 'quick-search' }))
   query.value = ''
   dialog.value?.showModal()
   await nextTick()
@@ -35,6 +37,15 @@ function keyboard(e: KeyboardEvent) {
   }
 }
 function resultKeys(e: KeyboardEvent) {
+  if (e.isComposing) return
+  if (e.key === 'Enter' && e.target === input.value?.input) {
+    const first = dialog.value?.querySelector<HTMLAnchorElement>('.search-result')
+    if (first) {
+      e.preventDefault()
+      first.click()
+    }
+    return
+  }
   if (!['ArrowDown', 'ArrowUp'].includes(e.key) || e.isComposing) return
   const links = [...(dialog.value?.querySelectorAll<HTMLAnchorElement>('.search-result') ?? [])]
   if (!links.length) return
@@ -75,15 +86,13 @@ onBeforeUnmount(() => {
           <IconGlyph name="x" />
         </button>
       </header>
-      <label class="search-field"
-        ><IconGlyph name="search" /><span class="sr-only">搜索文章、项目和站点</span
-        ><input
-          ref="input"
-          v-model="query"
-          type="search"
-          placeholder="文章、项目、站点…"
-          autocomplete="off"
-      /></label>
+      <SearchField
+        ref="input"
+        v-model="query"
+        label="搜索文章、项目和站点"
+        name="quick-search"
+        placeholder="文章、项目、站点…"
+      />
       <p class="search-status" role="status">
         {{ results.length }} 个结果 · ↑ ↓ 移动，Enter 打开，Esc 关闭
       </p>
@@ -132,7 +141,7 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-popover);
 }
 .quick-search::backdrop {
-  background: rgb(20 15 25 / 45%);
+  background: var(--color-overlay);
 }
 .quick-search__body {
   padding: 1.25rem;

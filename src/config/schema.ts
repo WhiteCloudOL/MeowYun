@@ -70,6 +70,7 @@ export interface FriendLinkItem {
   enabled: boolean
 }
 
+/** 当前布局读取图片、位置、透明度、饱和度、亮度与 effect；其余字段保留旧版类型兼容。 */
 export interface PageBackground {
   image: string
   mobileImage?: string
@@ -110,13 +111,13 @@ export interface SiteConfig {
     globalBackground: PageBackground
     lightBackground?: Partial<PageBackground>
     homeBackground?: Partial<PageBackground>
-    /** 首页三段场景可分别覆盖底图；未填写的属性继续继承 homeBackground 与全局背景。 */
+    /** @deprecated 三场景已改为自然文档流，当前首页使用 homeBackground。 */
     homeSceneBackgrounds?: HomeSceneBackgrounds
     friendsBackground?: Partial<PageBackground>
     contentBackground?: Partial<PageBackground>
     readingBackground?: Partial<PageBackground>
     lightReadingBackground?: Partial<PageBackground>
-    /** 全站樱花飘落装饰；关闭后不挂载粒子节点。 */
+    /** @deprecated 当前布局不挂载樱花粒子；以背景 effect:none 与安静模式控制装饰。 */
     sakuraEffect?: boolean
     themeToggle: boolean
   }
@@ -126,6 +127,7 @@ export interface SiteConfig {
     path: `/${string}`
     to: string
     label: string
+    /** @deprecated 仅保留兼容；外链页由用户确认，不再自动倒计时。 */
     delaySeconds: number
     enabled: boolean
   }>
@@ -139,8 +141,11 @@ export interface SiteConfig {
     tagline: string
     description: string
     location: string
+    /** 当前首页只显示第一句，不进行轮换。 */
     quotes: string[]
+    /** @deprecated 保留旧组件兼容，当前首页不轮换签名。 */
     quoteInterval: number
+    /** @deprecated 当前首页完整显示文字，不使用打字动画。 */
     typingEffect: boolean
     socials: SocialItem[]
   }
@@ -159,6 +164,7 @@ export interface SiteConfig {
       enabled: boolean
       title: string
       description: string
+      /** @deprecated 精简档案不渲染字段表；必要资料可写入 description。 */
       facts: Array<{ label: string; value: string; icon: SiteIcon }>
     }
     contributions: {
@@ -182,6 +188,7 @@ export interface SiteConfig {
     articles: {
       enabled: boolean
       title: string
+      /** 首页展示 2–3 篇；输入会被限制在该范围内。 */
       limit: number
       toc: {
         enabled: boolean

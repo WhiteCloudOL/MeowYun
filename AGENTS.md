@@ -87,6 +87,8 @@ src/
 
 - Markdown 渲染必须保持 `html: false`，不得直接信任文章中的原生 HTML。
 - 外链添加安全的 `target` / `rel`，标题锚点必须稳定且处理重名。
+- 标题锚点需要对最终 ID 全局去重，包含自然后缀碰撞（如 A、A、A-2）。Markdown 图片已有链接时不得再嵌套查看按钮。
+- 复制失败的手动输入不得定时消失；代码复制按按钮独立反馈，异步响应要检查内容代次与卸载状态。
 - 新语法支持需要同步考虑样式、键盘操作、移动端和明暗主题。
 - Highlight.js 使用按需注册；新增语言时同时添加常见别名。
 - 保持 C/C++、C#、Java、JavaScript、TypeScript、Python、Go、Rust、PHP、Ruby、Swift、Kotlin、Dart、Scala、R、Lua、Perl、Objective-C，以及 JSON、YAML/YML、PowerShell、BAT/CMD、Shell、SQL、Dockerfile 等格式可用。
@@ -140,6 +142,12 @@ docs: refresh project documentation
 
 - `components/content/ArticleCard`、`ProjectCard`、`LinkCard` 为活跃内容卡；首页与索引共享。
 - `BasePopover` 是普通非模态浮层；`QuickSearch` 与图片查看使用原生 dialog。
+- 移动导航与浮层通过同一关闭事件协调；禁用的链接按钮渲染原生 disabled button，不保留 href。
+- 贡献图使用独立 `--contribution-0…4` Token 和缺失数据图例，不能复用成功色拼出难以区分的深色梯度。
+- 日期选择统一使用 `DatePicker` 主题日历，不调用浏览器日期弹窗；保留范围限制、方向键/月切换、模态焦点与关闭恢复。日历日用 UTC 运算。
+- 搜索统一使用 `SearchField`，清除按钮至少 44px，保留中文组合输入与清除后的焦点；不重新显示浏览器自带清除装饰。
+- 任务勾选框保留只读语义并使用主题样式；悬浮说明使用 `vTooltip`，不得用默认 title 提示替代。工具提示监听与定时器必须清理。
+- 技术标签的链接与只读项共用 Chip 外框；仅真实链接提供手型、Hover 和键盘焦点。
 - `useTheme`、`useMotion` 是共享偏好单例，存储失败安全退化，HMR 清理监听。
 - `content/articles/index.ts` 提供元数据与纯文本索引；`renderer.ts` 只随详情加载，保留全部语言与 html:false。
 - 旧 HomeDashboard、ProfileHero、QuickLinksGrid 等未引用组件是历史实现，不代表当前页面能力；不擅自删除源素材。

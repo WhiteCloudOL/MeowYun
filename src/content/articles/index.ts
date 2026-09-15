@@ -1,6 +1,7 @@
 import type { ArticleHeadingLevel } from '@/config/schema'
 import { isSiteIcon, type SiteIcon } from '@/types/icon'
 import { resolveImage } from './assets'
+import { parseArticleSource } from '@/utils/articleMetadata'
 
 export interface Article {
   slug: string
@@ -32,28 +33,6 @@ const articleFiles = import.meta.glob('./*.md', {
   import: 'default',
 }) as Record<string, string>
 
-function parseFrontmatter(source: string) {
-  const match = source.replaceAll('\r\n', '\n').match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-  const attributes: Record<string, string> = {}
-
-  for (const line of (match?.[1] ?? '').split('\n')) {
-    const separator = line.indexOf(':')
-    if (separator === -1) continue
-
-    attributes[line.slice(0, separator).trim()] = line.slice(separator + 1).trim()
-  }
-
-  return { attributes, body: match?.[2] ?? source }
-}
-
-function parseTags(value = '') {
-  return value
-    .replace(/^\[|\]$/g, '')
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-}
-
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
@@ -74,9 +53,9 @@ function plainText(markdownSource: string) {
 
 export const articles: Article[] = Object.entries(articleFiles)
   .map(([path, source]) => {
-    const { attributes, body } = parseFrontmatter(source)
+    const { attributes, tags, body } = parseArticleSource(source, path)
     const slug = path.split('/').at(-1)?.replace(/\.md$/, '') ?? ''
-    const publishedAt = attributes.date ?? new Date().toISOString().slice(0, 10)
+    const publishedAt = attributes.date!
     const updatedAt = attributes.updated || undefined
     const firstImage = body.match(/!\[[^\]]*\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/)?.[1]
     const icon = attributes.icon && isSiteIcon(attributes.icon) ? attributes.icon : undefined
@@ -90,7 +69,7 @@ export const articles: Article[] = Object.entries(articleFiles)
       updatedAt,
       displayDate: formatDate(publishedAt),
       displayUpdatedAt: updatedAt ? formatDate(updatedAt) : undefined,
-      tags: parseTags(attributes.tags),
+      tags,
       featured: attributes.featured === 'true',
       icon,
       cover: resolveImage(attributes.cover) ?? resolveImage(firstImage),

@@ -47,6 +47,7 @@
 :root[data-quiet='true'] *::before,
 :root[data-quiet='true'] *::after {
   animation: none !important;
+  transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
 @media (prefers-reduced-motion: reduce) {

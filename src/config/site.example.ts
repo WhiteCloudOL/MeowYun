@@ -186,9 +186,9 @@ export const siteConfig: SiteConfig = {
     tagline: '开发者 · 创作者',
     description: '在这里写一段简短的个人介绍。',
     location: '中国',
-    quotes: ['在这里写一句喜欢的话。', '也可以继续添加更多轮换签名。'],
+    quotes: ['在这里写一句喜欢的话。'],
     quoteInterval: 6500,
-    typingEffect: true,
+    typingEffect: false,
     socials: [
       {
         id: 'github',

@@ -15,11 +15,12 @@ defineProps<{ item: ProjectItem; featured?: boolean }>()
   >
     <div class="project-card__label">
       <span class="project-card__icon"
-        ><ConfigIcon :name="item.icon" :provider="item.iconProvider" :size="26" /></span
-      ><IconGlyph name="arrow-up-right" class="project-card__arrow" />
+        ><ConfigIcon :name="item.icon" :provider="item.iconProvider" :size="26"
+      /></span>
+      <h3>{{ item.title }}</h3>
+      <IconGlyph name="arrow-up-right" class="project-card__arrow" />
     </div>
     <div class="project-card__content">
-      <h3>{{ item.title }}</h3>
       <p>{{ item.description }}</p>
       <p v-if="item.audience" class="project-card__audience">适合：{{ item.audience }}</p>
       <div class="project-card__tags">
@@ -56,12 +57,14 @@ defineProps<{ item: ProjectItem; featured?: boolean }>()
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.25rem;
+  gap: 0.75rem;
 }
 .project-card__icon {
   display: grid;
   place-items: center;
   width: 3.25rem;
   height: 3.25rem;
+  flex-shrink: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
   background: var(--color-surface);
@@ -69,7 +72,9 @@ defineProps<{ item: ProjectItem; featured?: boolean }>()
 }
 .project-card h3 {
   font-size: var(--text-lg);
-  margin-bottom: 0.65rem;
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
 }
 .project-card--featured h3 {
   font-size: var(--text-xl);

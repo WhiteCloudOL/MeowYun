@@ -47,6 +47,7 @@ import type { ArticleHeadingLevel } from '@/config/schema'
 
 import type { ArticleHeading } from './index'
 import { resolveImage } from './assets'
+import { createHeadingId } from '@/utils/headingIds'
 
 // 按需注册主流语言与常见配置格式，兼顾覆盖范围和文章页包体积。
 const highlightLanguages = {
@@ -142,21 +143,19 @@ markdown.renderer.rules.fence = (tokens, index) => {
   </div>`
 }
 
-function createHeadingId(text: string, ids: Map<string, number>) {
-  const base =
-    text
-      .normalize('NFKC')
-      .toLocaleLowerCase('zh-CN')
-      .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
-      .replace(/^-|-$/g, '') || 'section'
-  const count = ids.get(base) ?? 0
-  ids.set(base, count + 1)
-  return count === 0 ? `heading-${base}` : `heading-${base}-${count + 1}`
-}
-
 function prepareTokens(tokens: Token[]) {
   const headings: ArticleHeading[] = []
-  const headingIds = new Map<string, number>()
+  const headingIds = new Set<string>()
+  const plainHeading = (items: Token[]): string =>
+    items
+      .map((item) =>
+        item.children
+          ? plainHeading(item.children)
+          : ['text', 'code_inline', 'image'].includes(item.type)
+            ? item.content
+            : '',
+      )
+      .join('')
 
   const visit = (items: Token[]) => {
     for (let index = 0; index < items.length; index += 1) {
@@ -166,8 +165,9 @@ function prepareTokens(tokens: Token[]) {
       if (token.type === 'heading_open') {
         const inline = items[index + 1]
         const level = Number(token.tag.slice(1)) as ArticleHeadingLevel
-        const text = inline?.type === 'inline' ? inline.content : ''
-        const id = createHeadingId(text, headingIds)
+        const text = inline?.type === 'inline' ? plainHeading(inline.children ?? []) : ''
+        // 保留既有标题 ID 的生成输入，仅目录使用去除 Markdown 标记的纯文本。
+        const id = createHeadingId(inline?.content ?? '', headingIds)
         token.attrSet('id', id)
         headings.push({ level, text, id })
       }

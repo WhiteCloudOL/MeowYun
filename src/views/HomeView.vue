@@ -17,6 +17,24 @@ const projects = sections.projects.items.filter((x) => x.enabled)
 const featured = projects.slice(0, 3)
 const latest = computed(() => articles.slice(0, Math.min(3, Math.max(2, sections.articles.limit))))
 const socials = profile.socials.filter((x) => x.enabled)
+const visibleAnchors = new Set([
+  ...(profile.enabled ? ['welcome'] : []),
+  ...(sections.projects.enabled && projects.length ? ['projects'] : []),
+  ...(sections.articles.enabled ? ['notes'] : []),
+  ...(sections.about.enabled ||
+  sections.skills.enabled ||
+  sections.contributions.enabled ||
+  siteConfig.nowNote
+    ? ['about']
+    : []),
+])
+const quickLinks = sections.quickLinks.items.filter(
+  (item) =>
+    item.enabled &&
+    (!item.href.startsWith('#') || visibleAnchors.has(item.href.slice(1))) &&
+    !(profile.enabled && item.href === '#projects' && visibleAnchors.has('projects')) &&
+    !(profile.enabled && item.href === '/articles' && sections.articles.enabled),
+)
 function skillTarget(label: string) {
   const words = label.split(/\s*[/／]\s*/)
   const article = articles.find((a) =>
@@ -67,7 +85,7 @@ function skillTarget(label: string) {
     </section>
     <nav v-if="sections.quickLinks.enabled" class="home-links" aria-label="快捷入口">
       <a
-        v-for="item in sections.quickLinks.items.filter((x) => x.enabled)"
+        v-for="item in quickLinks"
         :key="item.id"
         :href="item.href"
         :target="item.href.startsWith('http') ? '_blank' : undefined"
@@ -85,7 +103,7 @@ function skillTarget(label: string) {
       <div class="section-heading">
         <div>
           <p class="eyebrow">做成可以使用的东西</p>
-          <h2 id="projects-title">作品玩具箱</h2>
+          <h2 id="projects-title">{{ sections.projects.title || '作品玩具箱' }}</h2>
         </div>
         <RouterLink class="text-link" to="/navigation#projects"
           >查看全部 {{ projects.length }} 个作品 <IconGlyph name="arrow-right" :size="17"
@@ -109,7 +127,7 @@ function skillTarget(label: string) {
       <div class="section-heading">
         <div>
           <p class="eyebrow">把经验写下来</p>
-          <h2 id="notes-title">最近翻开的几页</h2>
+          <h2 id="notes-title">{{ sections.articles.title || '最近翻开的几页' }}</h2>
         </div>
         <RouterLink class="text-link" to="/articles"
           >全部文章 <IconGlyph name="arrow-right" :size="17"
@@ -154,7 +172,7 @@ function skillTarget(label: string) {
               class="chip"
               :to="skillTarget(skill.label)!"
               >{{ skill.label }}</RouterLink
-            ><span v-else class="skill-label">{{ skill.label }}</span></template
+            ><span v-else class="chip">{{ skill.label }}</span></template
           >
         </div>
         <div class="profile-socials">
@@ -178,7 +196,7 @@ function skillTarget(label: string) {
 </template>
 <style scoped>
 .home-view {
-  padding-top: 2rem;
+  padding-top: 1rem;
   padding-bottom: var(--space-12);
 }
 .welcome {
@@ -190,7 +208,7 @@ function skillTarget(label: string) {
 .welcome__paper {
   position: relative;
   background: var(--color-surface);
-  padding: clamp(1.5rem, 4vw, 3rem);
+  padding: clamp(1.5rem, 4vw, 2.25rem);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-brand);
@@ -212,7 +230,7 @@ function skillTarget(label: string) {
   gap: 0.5rem;
 }
 .welcome h1 {
-  font-size: var(--text-display);
+  font-size: clamp(2.25rem, 4.5vw, 3.75rem);
   font-weight: 750;
   line-height: 1.2;
 }
@@ -224,7 +242,7 @@ function skillTarget(label: string) {
   color: var(--color-text-secondary);
 }
 .welcome__tagline {
-  margin-block: 1.5rem 0.6rem;
+  margin-block: 1.25rem 0.6rem;
   font-size: var(--text-lg);
   font-weight: 600;
 }
@@ -239,8 +257,8 @@ function skillTarget(label: string) {
 }
 .welcome__quote {
   border-top: 1px solid var(--color-border-soft);
-  margin-top: 1.75rem;
-  padding-top: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
@@ -286,7 +304,7 @@ function skillTarget(label: string) {
   justify-content: center;
   gap: 1rem 2rem;
   flex-wrap: wrap;
-  margin-block: 2.25rem;
+  margin-block: 1.5rem;
 }
 .home-links a {
   display: inline-flex;
@@ -301,6 +319,9 @@ function skillTarget(label: string) {
 }
 .home-section {
   margin-top: var(--section-gap);
+}
+.home-links + .home-section {
+  margin-top: 3rem;
 }
 .featured-projects {
   display: grid;
@@ -344,14 +365,7 @@ function skillTarget(label: string) {
   gap: 0.5rem;
   margin-top: 1.5rem;
 }
-.skill-label {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap-size);
-  padding: 0.4rem 0.8rem;
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
+
 .profile-socials {
   display: flex;
   flex-wrap: wrap;
@@ -380,19 +394,72 @@ function skillTarget(label: string) {
     padding-top: 0.5rem;
   }
   .welcome {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+    grid-template-columns: minmax(0, 1fr) 6.75rem;
+    gap: 0.75rem 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-large);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-brand);
+  }
+  .welcome__paper {
+    display: contents;
+  }
+  .welcome__paper::before {
+    display: none;
+  }
+  .welcome__paper > * {
+    grid-column: 1 / -1;
+  }
+  .welcome .eyebrow,
+  .welcome h1 {
+    grid-column: 1;
+  }
+  .welcome .eyebrow {
+    margin: 0;
+    font-size: var(--text-xs);
+  }
+  .welcome__tagline,
+  .welcome__actions {
+    margin: 0.25rem 0 0;
+  }
+  .welcome__quote {
+    margin-top: 0.25rem;
   }
   .polaroid-arrival {
-    width: min(75%, 20rem);
+    grid-column: 2;
+    grid-row: 1 / 3;
+    width: 100%;
+    padding: 0;
+  }
+  .polaroid {
+    padding: 0.4rem;
+  }
+  .polaroid figcaption {
+    margin-top: 0.35rem;
+  }
+  .polaroid figcaption strong,
+  .polaroid figcaption svg {
+    display: none;
+  }
+  .polaroid figcaption span {
     margin-inline: auto;
+    overflow-wrap: anywhere;
   }
   .welcome h1 {
-    font-size: clamp(2.25rem, 8vw, 3rem);
+    font-size: clamp(1.75rem, 5.5vw, 2.5rem);
+    overflow-wrap: anywhere;
+  }
+  .welcome h1 span {
+    font-size: 0.65em;
+  }
+  .home-links + .home-section {
+    margin-top: 2rem;
   }
   .home-links {
     justify-content: flex-start;
     gap: 0.5rem 1.25rem;
+    margin-block: 1rem;
   }
   .home-notes__body {
     grid-template-columns: 1fr;

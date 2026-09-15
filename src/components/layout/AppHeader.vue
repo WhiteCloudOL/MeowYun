@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vTooltip } from '@/utils/tooltip'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { siteConfig } from '@/config/site'
@@ -12,6 +13,7 @@ const route = useRoute()
 const root = ref<HTMLElement>()
 const menuButton = ref<HTMLButtonElement>()
 const mobileOpen = ref(false)
+const mobilePanelId = 'primary-navigation'
 const navigation = siteConfig.navigation.filter((x) => x.enabled && x.to)
 const contacts = computed(() => {
   const entries = siteConfig.navigation.filter((x) => x.enabled).flatMap((x) => x.children ?? [])
@@ -35,6 +37,18 @@ function close(restore = false) {
   mobileOpen.value = false
   if (restore) menuButton.value?.focus()
 }
+function toggleMobile() {
+  if (!mobileOpen.value)
+    document.dispatchEvent(new CustomEvent('meowyun:popover', { detail: mobilePanelId }))
+  mobileOpen.value = !mobileOpen.value
+}
+function otherPanel(event: Event) {
+  if ((event as CustomEvent<string>).detail !== mobilePanelId) close()
+}
+function requestSearch() {
+  document.dispatchEvent(new CustomEvent('meowyun:popover', { detail: 'quick-search' }))
+  emit('search')
+}
 function keydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && mobileOpen.value) close(true)
 }
@@ -53,11 +67,13 @@ onMounted(() => {
   document.addEventListener('keydown', keydown)
   document.addEventListener('pointerdown', outside)
   window.addEventListener('resize', resize)
+  document.addEventListener('meowyun:popover', otherPanel)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', keydown)
   document.removeEventListener('pointerdown', outside)
   window.removeEventListener('resize', resize)
+  document.removeEventListener('meowyun:popover', otherPanel)
 })
 </script>
 <template>
@@ -108,8 +124,10 @@ onBeforeUnmount(() => {
           type="button"
           class="icon-button"
           aria-label="站内快速查找"
-          title="站内快速查找 · Ctrl / ⌘ K"
-          @click="emit('search')"
+          v-tooltip
+          data-tooltip="站内快速查找 · Ctrl / ⌘ K"
+          aria-keyshortcuts="Control+k Meta+k"
+          @click="requestSearch"
         >
           <IconGlyph name="search" />
         </button>
@@ -121,7 +139,7 @@ onBeforeUnmount(() => {
           :aria-label="mobileOpen ? '关闭导航' : '打开导航'"
           :aria-expanded="mobileOpen"
           aria-controls="primary-navigation"
-          @click="mobileOpen = !mobileOpen"
+          @click="toggleMobile"
         >
           <IconGlyph :name="mobileOpen ? 'x' : 'menu'" />
         </button>
@@ -161,6 +179,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.5rem;
   min-height: var(--tap-size);
+  min-width: var(--tap-size);
   font-weight: 700;
   font-size: var(--text-sm);
   white-space: nowrap;

@@ -22,7 +22,11 @@ const style = computed(() => ({
   '--wallpaper': 'url("' + props.config.image + '")',
   '--mobile-wallpaper': 'url("' + (props.config.mobileImage ?? props.config.image) + '")',
   '--position': props.config.position,
-  '--wallpaper-opacity': props.reading ? '.035' : props.cinematic ? '.24' : '.12',
+  '--wallpaper-opacity':
+    Math.max(0, Math.min(1, props.config.imageOpacity)) *
+    (props.reading ? 0.05 : props.cinematic ? 0.24 : 0.12),
+  '--wallpaper-saturation': Math.max(0, Math.min(1.2, props.config.saturation)),
+  '--wallpaper-brightness': Math.max(0.4, Math.min(1.2, props.config.brightness)),
 }))
 </script>
 <template>
@@ -57,6 +61,7 @@ const style = computed(() => ({
   background-position: var(--position);
   background-size: cover;
   opacity: var(--wallpaper-opacity);
+  filter: saturate(var(--wallpaper-saturation)) brightness(var(--wallpaper-brightness));
   mask-image: linear-gradient(to bottom, #000, transparent);
 }
 .is-reading {

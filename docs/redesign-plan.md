@@ -69,7 +69,7 @@
 | ThemeToggle  | 点击 Popover，安全持久化               |
 | 联系菜单     | 点击 Popover，补真实邮箱与用途         |
 
-新增：本地快速查找 Dialog、安静模式、可选 NowNote/维护字段、真实更新小记、ImageFallback、EmptyState。未引用旧组件先保留，不删除用户原始素材。
+新增：本地快速查找 Dialog、安静模式、可选 NowNote/维护字段、真实更新小记、ImageFallback、EmptyState、主题 DatePicker 与共享 SearchField。任务勾选框和悬浮提示统一主题；技术标签链接与只读项共用外框。未引用旧组件先保留，不删除用户原始素材。
 
 ## 验收口径
 

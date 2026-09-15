@@ -3,6 +3,8 @@ import ImageFallback from '@/components/ui/ImageFallback.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
 import type { Article } from '@/content/articles'
 import { siteConfig } from '@/config/site'
+import { useRoute } from 'vue-router'
+const route = useRoute()
 const props = defineProps<{ article: Article; compact?: boolean }>()
 const cover = siteConfig.sections.articles.covers.find((x) => x.slug === props.article.slug)
 </script>
@@ -14,7 +16,7 @@ const cover = siteConfig.sections.articles.covers.find((x) => x.slug === props.a
         :src="article.cover ?? cover?.image"
         alt=""
         :icon="article.icon ?? 'book-open'"
-        :style="{ objectPosition: cover?.position }" />
+        :position="cover?.position" />
       <div>
         <div class="article-card__meta">
           <time :datetime="article.publishedAt">{{ article.displayDate }}</time
@@ -31,7 +33,10 @@ const cover = siteConfig.sections.articles.covers.find((x) => x.slug === props.a
         v-for="tag in article.tags"
         :key="tag"
         class="chip"
-        :to="'/articles/tags/' + encodeURIComponent(tag)"
+        :to="{
+          path: '/articles/tags/' + encodeURIComponent(tag),
+          query: typeof route.query.q === 'string' ? { q: route.query.q } : {},
+        }"
         >{{ tag }}</RouterLink
       >
     </div>
@@ -93,15 +98,31 @@ const cover = siteConfig.sections.articles.covers.find((x) => x.slug === props.a
 .article-card__link:hover h3 {
   color: var(--color-link);
 }
+.article-card--compact {
+  padding-block: 1.25rem;
+}
+.article-card--compact .article-card__link {
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 1rem;
+}
+.article-card--compact .article-card__image {
+  height: 5rem;
+}
+.article-card--compact .article-card__tags {
+  padding-left: 6rem;
+}
 @media (max-width: 540px) {
-  .article-card__link {
+  .article-card__link,
+  .article-card--compact .article-card__link {
     grid-template-columns: 4rem minmax(0, 1fr);
     gap: 0.8rem;
   }
-  .article-card__image {
+  .article-card__image,
+  .article-card--compact .article-card__image {
     height: 4rem;
   }
-  .article-card__tags {
+  .article-card__tags,
+  .article-card--compact .article-card__tags {
     padding-left: 0;
   }
   .article-card h3 {

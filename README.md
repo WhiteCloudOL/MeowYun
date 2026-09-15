@@ -73,7 +73,7 @@ npm run dev
 - 友链、联系方式、备案信息和外部短链
 - 模块显隐与各页面背景；新主题统一在 `src/styles/tokens.css` 维护
 - 可选近况 `nowNote`、项目维护信息与真实站点更新小记
-- 背景遮罩、模糊、亮度、饱和度与低干扰装饰效果
+- 背景图片、位置、透明度、亮度、饱和度与低干扰装饰效果
 
 图片资源建议使用 WebP 或 AVIF，并放在 `src/assets/images/`。默认 Open Graph 图片为 `public/og-card.webp`，推荐保持 1200 × 630。
 
@@ -103,6 +103,16 @@ updates: [
 - 贡献接口无需 Token；8 秒超时，无自动重试、伪造矩阵或静默演示数据。缺失日期显示暂无记录。
 - 安静偏好保存在本机，系统减少动态效果优先；存储被禁用时仍可在本次会话切换。
 - 旧 appearance 玻璃参数、三场景参数保留类型兼容，新布局使用稳定纸面；首页沿用 homeBackground，阅读页不运行动态装饰。
+- `profile.quotes` 当前显示第一句；`quoteInterval`、`typingEffect` 保留兼容但不再驱动轮播或打字。`about.facts` 的简历表格不渲染，可将必要资料放入 `about.description`。
+- 背景的 `overlay`、`blur`、`tint`、`grayscale`、`twinkles`、`autoPan` 是旧版兼容项；当前不生效。`effect: none` 关闭装饰，其余旧值统一为轻量星形装饰。不要通过这些旧参数判断新主题效果。
+- 首页文章 `limit` 限制为 2–3 篇，避免首页变成长归档。关闭分区后，相应的首页快捷锚点入口也会隐藏。
+- 欢迎区已有作品、文章主行动时，重复快捷入口合并到对应按钮；友链及其他入口继续保留。
+- 首页文章卡的 `compact` 使用较小封面与间距；旧页脚/贡献图 `compact` 仅保留类型兼容，不表示另一套布局。项目和站点卡当前使用图标与统一纸面，旧 `image`、`accent` 字段不驱动封面或配色。
+- 手机阅读工具位于正文后方，不覆盖滚动中的文字。代码复制失败使用原生对话框，关闭后回到对应按钮；带链接的文章图片保留跳转行为，普通图片可查看原图。
+- 贡献图使用独立五级色阶与缺失数据图例；日期查询提供精确数量，不把每个格子加入 Tab 顺序。
+- 日期查询使用与明暗主题一致的日历面板，支持月份切换、最新记录、范围限制、方向键选日、Page Up / Down 切月与 Escape 关闭；关闭后焦点回到入口。320px 仍保留 44px 日期命中区。
+- 文章、导航、快速查找共用 `SearchField` 与可聚焦的清除按钮。搜索清除、任务勾选框、悬浮提示和滚动条均使用站点样式；对话框保留语义与模态能力。
+- 关于我的技术标签统一边框和尺寸。存在真实目标时才渲染链接；只读标签没有手型或悬停反馈。
 - 外链兼容路径保留，现改为确认目的地后立即访问；旧 delaySeconds 仅作配置兼容，不再自动倒计时。
 
 测试夹具在 `tests/fixtures`，不属于发布文章。Markdown 元数据与纯文本索引在 `src/content/articles/index.ts`，渲染与按需高亮在 `renderer.ts`。
@@ -135,6 +145,8 @@ const message: string = 'Hello, MeowYunCN!'
 ````
 
 文章图片放在 `src/assets/images/articles/`，可在 Markdown 中使用文件名。文章会自动加入归档、搜索、标签、RSS、Sitemap 和静态详情入口。
+
+`date` 必须是真实有效的 `YYYY-MM-DD`；`updated` 可选，填写时也需要有效日期。构建与浏览器共用解析器，无效日期会指出文章文件并中止构建，不以当天日期代替。远端技术图片加载前预留比例，加载后保留固有比例；原始尺寸未知时仍可能有局部布局变化。
 
 支持标题、链接、图片、引用、有序/无序列表、任务列表、表格、行内代码和围栏代码块。代码高亮覆盖：
 
@@ -180,6 +192,10 @@ npm run build
 ```
 
 将 `dist/` 部署到静态托管服务。项目使用 Vue Router History 模式，托管平台需要把未知路径回退到 `/index.html`。
+
+静态入口同时生成 `articles.html` 与 `articles/index.html` 等形式，支持无末尾斜杠与目录入口。托管端需先匹配实际文件再执行 SPA 回退；本地 `preview` 已验证两种入口的原始 HTML Meta，线上托管行为仍应在实际发布后复核。EdgeOne 规则参考其 [SPA fallback 说明](https://pages.edgeone.ai/document/edgeone-json)。
+
+构建仅从 `siteConfig.meta` 读取字符串字面量以生成域名与 Meta，不执行配置表达式；`meta.name/title/description/siteUrl` 应保持明确字符串。配置启停通过 TypeScript 语法树读取，不通过跨对象正则猜测。普通页面不虚构 Sitemap 更新时间，文章使用 `updated` 或发布日期。
 
 仓库包含 EdgeOne Pages 使用的 `edgeone.json`。生产构建还会生成：
 

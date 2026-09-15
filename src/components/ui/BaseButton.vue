@@ -24,11 +24,10 @@ const props = withDefaults(
 )
 
 const attrs = useAttrs()
-const component = computed(() => (props.to ? RouterLink : props.href ? 'a' : 'button'))
-
-function preventDisabled(event: Event) {
-  if (props.disabled) event.preventDefault()
-}
+// 禁用时不创建带 href 的节点，避免 RouterLink 先处理点击或中键仍打开目标。
+const component = computed(() =>
+  props.disabled ? 'button' : props.to ? RouterLink : props.href ? 'a' : 'button',
+)
 </script>
 
 <template>
@@ -37,14 +36,13 @@ function preventDisabled(event: Event) {
     v-bind="attrs"
     class="base-button"
     :class="`base-button--${variant}`"
-    :to="to"
-    :href="href"
+    :to="!disabled ? to : undefined"
+    :href="!disabled ? href : undefined"
     :target="target"
     :rel="target === '_blank' ? 'noopener noreferrer' : undefined"
     :type="component === 'button' ? type : undefined"
     :disabled="component === 'button' ? disabled : undefined"
     :aria-disabled="disabled || undefined"
-    @click="preventDisabled"
   >
     <slot />
   </component>
@@ -82,11 +80,15 @@ function preventDisabled(event: Event) {
   background: transparent;
   color: var(--color-link);
 }
-.base-button:hover {
+.base-button:not(:disabled):hover {
   background: var(--color-primary-soft);
   color: var(--color-text);
 }
-.base-button:active {
+.base-button--primary:not(:disabled):hover {
+  background: var(--color-primary-hover);
+  color: var(--color-on-primary);
+}
+.base-button:not(:disabled):active {
   transform: translateY(2px);
   box-shadow: none;
 }

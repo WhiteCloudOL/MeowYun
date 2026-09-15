@@ -9,6 +9,8 @@ import IconGlyph from '@/components/ui/IconGlyph.vue'
 import ImageFallback from '@/components/ui/ImageFallback.vue'
 import ArticleCard from '@/components/content/ArticleCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import SearchField from '@/components/ui/SearchField.vue'
+import { archiveSeo } from '@/utils/routeSeo'
 const route = useRoute()
 const router = useRouter()
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
@@ -82,10 +84,7 @@ onBeforeUnmount(() => {
 })
 watchEffect(() =>
   updateSeo({
-    title: selectedTag.value
-      ? '#' + selectedTag.value + ' · ' + siteConfig.meta.name
-      : '文章与笔记 · ' + siteConfig.meta.name,
-    description: 'QQ 机器人、Minecraft 服务端、开源工具与部署运维笔记。',
+    ...archiveSeo(siteConfig.meta.name, selectedTag.value),
     path: route.path,
     noIndex: !!appliedQuery.value.trim(),
   }),
@@ -104,16 +103,16 @@ watchEffect(() =>
         >
       </header>
       <form class="archive-search" role="search" @submit.prevent="syncQuery(true)">
-        <label class="search-field"
-          ><IconGlyph name="search" /><span class="sr-only">搜索文章正文、标题与标签</span
-          ><input
-            v-model="query"
-            type="search"
-            placeholder="搜索标题、正文、技术关键词"
-            @input="inputChanged"
-            @compositionstart="composing = true"
-            @compositionend="finishComposition" /></label
-        ><button type="submit" class="sr-only">提交搜索</button>
+        <SearchField
+          v-model="query"
+          label="搜索文章正文、标题与标签"
+          name="q"
+          placeholder="搜索标题、正文、技术关键词"
+          @input="inputChanged"
+          @compositionstart="composing = true"
+          @compositionend="finishComposition"
+          @clear="clear('query')"
+        />
       </form>
       <nav class="archive-tags" aria-label="按标签筛选">
         <RouterLink class="chip" :to="tagLink()" :aria-current="!selectedTag ? 'page' : undefined"

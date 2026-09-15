@@ -1,6 +1,7 @@
 :root {
   color-scheme: light;
   --color-background: #fbf7f5;
+  --color-overlay: rgb(20 15 25 / 45%);
   --color-background-soft: #f2ecef;
   --color-surface: #fffefa;
   --color-surface-raised: #fffefa;
@@ -33,6 +34,11 @@
   --code-comment: #746578;
   --color-success: #386848;
   --color-error: #a13e57;
+  --contribution-0: #e9e0e4;
+  --contribution-1: #c3dfc9;
+  --contribution-2: #8bb89a;
+  --contribution-3: #578767;
+  --contribution-4: #30573e;
   --font-display: ui-rounded, 'Microsoft YaHei UI', 'PingFang SC', system-ui, sans-serif;
   --font-sans: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
@@ -134,6 +140,11 @@
   --color-focus: #edb3da;
   --color-success: #b1d5b7;
   --color-error: #f0a2b1;
+  --contribution-0: #403747;
+  --contribution-1: #375640;
+  --contribution-2: #5a8261;
+  --contribution-3: #8ab492;
+  --contribution-4: #c3e4c7;
   --shadow-card: 0 5px 18px rgb(0 0 0 / 12%);
   --shadow-card-hover: 0 9px 24px rgb(0 0 0 / 20%);
   --shadow-popover: 0 12px 36px rgb(0 0 0 / 32%);

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { siteConfig } from '@/config/site'
 import { updateSeo } from '@/utils/seo'
+import { archiveSeo, indexSeo, redirectSeo } from '@/utils/routeSeo'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,8 +54,7 @@ const router = createRouter({
       name: 'articles',
       component: () => import('@/views/ArticlesView.vue'),
       meta: {
-        title: `文章 · ${siteConfig.meta.name}`,
-        description: 'QQ 机器人、Minecraft 服务端、开源工具与部署运维笔记。',
+        ...archiveSeo(siteConfig.meta.name),
         transition: 'page-rise',
       },
     },
@@ -73,8 +73,7 @@ const router = createRouter({
       name: 'navigation',
       component: () => import('@/views/NavigationView.vue'),
       meta: {
-        title: `导航 · ${siteConfig.meta.name}`,
-        description: '清蒸云鸭的文档、服务状态、开源项目与常用入口。',
+        ...indexSeo(siteConfig.meta.name, 'navigation'),
         transition: 'page-rise',
       },
     },
@@ -83,8 +82,7 @@ const router = createRouter({
       name: 'friends',
       component: () => import('@/views/FriendsView.vue'),
       meta: {
-        title: `友链 · ${siteConfig.meta.name}`,
-        description: '清蒸云鸭的友链花园与友链交换方式。',
+        ...indexSeo(siteConfig.meta.name, 'friends'),
         transition: 'page-material',
       },
     },
@@ -106,9 +104,7 @@ const router = createRouter({
           delaySeconds: item.delaySeconds,
         },
         meta: {
-          title: `正在跳转 · ${siteConfig.meta.name}`,
-          description: `正在前往${item.label}。`,
-          noIndex: true,
+          ...redirectSeo(siteConfig.meta.name),
           transition: 'page-fade',
         },
       })),
@@ -129,6 +125,18 @@ const router = createRouter({
 router.afterEach((to) => {
   // 文章需要发布日期、标签等完整 Meta，由 ArticleView 在内容解析完成后独立更新。
   if (to.name === 'article') return
+
+  if (String(to.name).startsWith('articles')) {
+    updateSeo({
+      ...archiveSeo(
+        siteConfig.meta.name,
+        typeof to.params.tag === 'string' ? to.params.tag : undefined,
+      ),
+      path: to.path,
+      noIndex: typeof to.query.q === 'string' && !!to.query.q.trim(),
+    })
+    return
+  }
 
   updateSeo({
     title: typeof to.meta.title === 'string' ? to.meta.title : siteConfig.meta.title,

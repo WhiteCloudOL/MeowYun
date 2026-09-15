@@ -110,6 +110,7 @@ export function updateSeo(options: SeoOptions = {}) {
   const canonical = new URL(absoluteUrl(options.path ?? window.location.pathname))
   canonical.search = ''
   canonical.hash = ''
+  if (canonical.pathname !== '/') canonical.pathname = canonical.pathname.replace(/\/+$/, '')
   const pageUrl = canonical.toString()
   const imageUrl = absoluteUrl(options.image ?? siteConfig.meta.ogImage)
   const robots = options.noIndex ? 'noindex, nofollow' : 'index, follow'
@@ -130,6 +131,18 @@ export function updateSeo(options: SeoOptions = {}) {
   setMeta('property', 'article:published_time', options.publishedAt)
   setMeta('property', 'article:modified_time', options.updatedAt)
   setMeta('property', 'article:section', options.tags?.[0])
+  // 静态文章入口可能已带多个标签；路由离开或换文章时先清理，再写当前内容。
+  document.head
+    .querySelectorAll('meta[property="article:tag"]')
+    .forEach((element) => element.remove())
+  if (options.type === 'article') {
+    for (const tag of options.tags ?? []) {
+      const element = document.createElement('meta')
+      element.setAttribute('property', 'article:tag')
+      element.content = tag
+      document.head.append(element)
+    }
+  }
   setMeta('name', 'twitter:card', 'summary_large_image')
   setMeta('name', 'twitter:title', title)
   setMeta('name', 'twitter:description', description)

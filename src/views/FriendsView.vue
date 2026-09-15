@@ -139,9 +139,9 @@ function friendIcon(friend: FriendLinkItem) {
 .garden-empty {
   display: grid;
   justify-items: center;
-  gap: 1.25rem;
+  gap: 0.75rem;
   text-align: center;
-  padding: clamp(2rem, 6vw, 4rem);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-large);
   background: var(--color-secondary-soft);

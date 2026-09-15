@@ -1,48 +1,40 @@
 import { fileURLToPath, URL } from 'node:url'
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import { readPublicSiteConfig } from './build/siteConfig.ts'
+import { parseArticleSource } from './src/utils/articleMetadata.ts'
+import { archiveSeo, indexSeo, redirectSeo } from './src/utils/routeSeo.ts'
 
 const projectPath = (path: string) => fileURLToPath(new URL(path, import.meta.url))
 
 function readSiteUrl() {
-  const sources = ['./src/config/site.ts', './src/config/site.example.ts']
+  return readConfig().siteUrl
+}
 
-  for (const source of sources) {
-    try {
-      const config = readFileSync(projectPath(source), 'utf8')
-      const siteUrl = config.match(/siteUrl:\s*['"]([^'"]+)['"]/)?.[1]
-      if (siteUrl) return siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`
-    } catch {
-      // The example config remains available before the private site config is created.
-    }
-  }
-
-  return 'https://example.com/'
+function readConfig() {
+  // 私有配置仅在不存在时回退模板；语法或字段错误不能被吞掉后生成错误域名。
+  const path = projectPath(
+    existsSync(projectPath('./src/config/site.ts'))
+      ? './src/config/site.ts'
+      : './src/config/site.example.ts',
+  )
+  return readPublicSiteConfig(readFileSync(path, 'utf8'))
 }
 
 function readRedirectPaths() {
-  const sources = ['./src/config/site.ts', './src/config/site.example.ts']
-
-  for (const source of sources) {
-    try {
-      const config = readFileSync(projectPath(source), 'utf8')
-      const redirects = config.match(/redirects:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n\s*profile:/)?.[1]
-      if (!redirects) continue
-
-      return [...redirects.matchAll(/path:\s*['"]([^'"]+)['"][\s\S]*?enabled:\s*true/g)].map(
-        (match) => match[1],
-      )
-    } catch {
-      // The example config remains available before the private site config is created.
-    }
-  }
-
-  return []
+  return readConfig().redirects
 }
 
 interface ArticleMetadata {
@@ -66,19 +58,7 @@ interface RouteSeo {
 }
 
 function readSiteString(key: string, fallback: string) {
-  const sources = ['./src/config/site.ts', './src/config/site.example.ts']
-
-  for (const source of sources) {
-    try {
-      const config = readFileSync(projectPath(source), 'utf8')
-      const value = config.match(new RegExp(`${key}:\\s*['"]([^'"]+)['"]`))?.[1]
-      if (value) return value
-    } catch {
-      // 本地配置缺失时继续读取可提交的示例配置。
-    }
-  }
-
-  return fallback
+  return readConfig().text(key, fallback)
 }
 
 function readArticleMetadata(): ArticleMetadata[] {
@@ -88,21 +68,16 @@ function readArticleMetadata(): ArticleMetadata[] {
     .filter((filename) => filename.endsWith('.md'))
     .map((filename) => {
       const source = readFileSync(join(articleDirectory, filename), 'utf8')
-      const frontmatter = source.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? ''
-      const value = (key: string) =>
-        frontmatter.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'))?.[1]?.trim() ?? ''
+      const { attributes, tags } = parseArticleSource(source, filename)
+      const value = (key: string) => attributes[key] ?? ''
 
       return {
         slug: filename.replace(/\.md$/, ''),
         title: value('title') || filename.replace(/\.md$/, ''),
         description: value('description'),
-        date: value('date') || new Date().toISOString().slice(0, 10),
+        date: value('date'),
         updated: value('updated') || undefined,
-        tags: value('tags')
-          .replace(/^\[|\]$/g, '')
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean),
+        tags,
       }
     })
     .sort((left, right) => right.date.localeCompare(left.date))
@@ -123,11 +98,14 @@ function renderRouteHtml(baseHtml: string, seo: RouteSeo) {
   const pageUrl = new URL(seo.path.replace(/^\//, ''), siteUrl).toString()
   const canonical = `<link rel="canonical" href="${escapeXml(pageUrl)}" />`
   let html = baseHtml
+    .replace(/<script\b[^>]*id="site-structured-data"[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<meta\s+property="article:[^"]+"[^>]*>/gi, '')
     .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeXml(seo.title)}</title>`)
     .replace(/<link rel="canonical"[^>]*>/i, canonical)
 
   const metadata: Array<['name' | 'property', string, string]> = [
     ['name', 'description', seo.description],
+    ['name', 'keywords', seo.tags?.join(',') ?? readSiteString('keywords', '')],
     ['name', 'robots', seo.noIndex ? 'noindex, nofollow' : 'index, follow'],
     ['property', 'og:type', seo.type ?? 'website'],
     ['property', 'og:site_name', siteName],
@@ -226,8 +204,14 @@ ${items}
 }
 
 function seoFilesPlugin(): Plugin {
+  let outputDirectory = projectPath('./dist')
+  let building = false
   return {
     name: 'meowyun-seo-files',
+    configResolved(config) {
+      outputDirectory = resolve(config.root, config.build.outDir)
+      building = config.command === 'build'
+    },
     configureServer(server) {
       // 开发环境也提供真实 RSS，避免页面上的订阅入口只能在生产构建后验证。
       server.middlewares.use('/rss.xml', (_request, response) => {
@@ -237,35 +221,34 @@ function seoFilesPlugin(): Plugin {
       })
     },
     closeBundle() {
+      if (!building) return
       const siteUrl = readSiteUrl()
-      const outputDirectory = projectPath('./dist')
-      const today = new Date().toISOString().slice(0, 10)
       const articleMetadata = readArticleMetadata()
       const staticPages = [
-        { path: '', priority: '1.0', changefreq: 'weekly', lastmod: today },
-        { path: 'articles', priority: '0.9', changefreq: 'weekly', lastmod: today },
-        { path: 'navigation', priority: '0.8', changefreq: 'monthly', lastmod: today },
-        { path: 'friends', priority: '0.7', changefreq: 'monthly', lastmod: today },
+        { path: '', priority: '1.0', changefreq: 'weekly', lastmod: '' },
+        { path: 'articles', priority: '0.9', changefreq: 'weekly', lastmod: '' },
+        { path: 'navigation', priority: '0.8', changefreq: 'monthly', lastmod: '' },
+        { path: 'friends', priority: '0.7', changefreq: 'monthly', lastmod: '' },
       ]
       const articlePages = articleMetadata.map((article) => ({
         path: `articles/${article.slug}`,
         priority: '0.8',
         changefreq: 'monthly',
-        lastmod: article.date,
+        lastmod: article.updated ?? article.date,
       }))
       const tagPages = [...new Set(articleMetadata.flatMap((article) => article.tags))].map(
         (tag) => ({
           path: `articles/tags/${tag}`,
           priority: '0.6',
           changefreq: 'weekly',
-          lastmod: today,
+          lastmod: '',
         }),
       )
       const entries = [...staticPages, ...articlePages, ...tagPages]
         .map(
           (page) => `  <url>
     <loc>${escapeXml(new URL(page.path, siteUrl).toString())}</loc>
-    <lastmod>${page.lastmod}</lastmod>
+    ${page.lastmod ? `<lastmod>${page.lastmod}</lastmod>` : ''}
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`,
@@ -291,11 +274,23 @@ Sitemap: ${new URL('sitemap.xml', siteUrl)}
 }
 
 function deploymentFilesPlugin(): Plugin {
+  let outputDirectory = projectPath('./dist')
+  let building = false
   return {
     name: 'meowyun-deployment-files',
-    apply: 'build',
+    configResolved(config) {
+      outputDirectory = resolve(config.root, config.build.outDir)
+      building = config.command === 'build'
+    },
+    transformIndexHtml(html) {
+      return renderRouteHtml(html, {
+        path: '/',
+        title: readSiteString('title', '个人主页'),
+        description: readSiteString('description', ''),
+      })
+    },
     closeBundle() {
-      const outputDirectory = projectPath('./dist')
+      if (!building) return
       const entryFile = join(outputDirectory, 'index.html')
       const baseHtml = readFileSync(entryFile, 'utf8')
       const articleMetadata = readArticleMetadata()
@@ -303,18 +298,15 @@ function deploymentFilesPlugin(): Plugin {
       const routes: RouteSeo[] = [
         {
           path: '/articles',
-          title: `文章 · ${siteName}`,
-          description: 'QQ 机器人、Minecraft 服务端、开源工具与部署运维笔记。',
+          ...archiveSeo(siteName),
         },
         {
           path: '/navigation',
-          title: `导航 · ${siteName}`,
-          description: `${siteName}的文档、服务状态、开源项目与常用入口。`,
+          ...indexSeo(siteName, 'navigation'),
         },
         {
           path: '/friends',
-          title: `友链 · ${siteName}`,
-          description: `${siteName}的友链花园与友链交换方式。`,
+          ...indexSeo(siteName, 'friends'),
         },
         ...articleMetadata.map((article) => ({
           path: `/articles/${article.slug}`,
@@ -327,15 +319,12 @@ function deploymentFilesPlugin(): Plugin {
         })),
         ...[...new Set(articleMetadata.flatMap((article) => article.tags))].map((tag) => ({
           path: `/articles/tags/${tag}`,
-          title: `#${tag} 文章 · ${siteName}`,
-          description: `浏览与 ${tag} 相关的技术文章、实践记录与开发笔记。`,
+          ...archiveSeo(siteName, tag),
           tags: [tag],
         })),
         ...readRedirectPaths().map((path) => ({
           path,
-          title: `正在跳转 · ${siteName}`,
-          description: '正在前往外部页面。',
-          noIndex: true,
+          ...redirectSeo(siteName),
         })),
       ]
 
@@ -355,6 +344,10 @@ function deploymentFilesPlugin(): Plugin {
         const routeDirectory = join(outputDirectory, ...route.path.split('/').filter(Boolean))
         mkdirSync(routeDirectory, { recursive: true })
         writeFileSync(join(routeDirectory, 'index.html'), renderRouteHtml(baseHtml, route))
+        // clean URL 托管/preview 会优先尝试同名 .html；同时保留目录入口供带斜杠直达。
+        const cleanEntry = join(outputDirectory, route.path.slice(1) + '.html')
+        mkdirSync(dirname(cleanEntry), { recursive: true })
+        writeFileSync(cleanEntry, renderRouteHtml(baseHtml, route))
       }
     },
   }

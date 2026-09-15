@@ -4,7 +4,7 @@ import { siteConfig } from '@/config/site'
 import { matchesSearch } from '@/utils/search'
 import LinkCard from '@/components/content/LinkCard.vue'
 import ProjectCard from '@/components/content/ProjectCard.vue'
-import IconGlyph from '@/components/ui/IconGlyph.vue'
+import SearchField from '@/components/ui/SearchField.vue'
 const query = ref('')
 const siteLinks = computed(() =>
   siteConfig.sections.navigation.items.filter(
@@ -26,10 +26,13 @@ const projects = computed(() =>
       <h1>导航与作品索引</h1>
       <p>文档、服务与开源项目，都可以从这里找到。</p>
     </header>
-    <label class="search-field navigation-search"
-      ><IconGlyph name="search" /><span class="sr-only">查找站点与作品</span
-      ><input v-model="query" type="search" placeholder="查找站点、作品或技术"
-    /></label>
+    <SearchField
+      v-model="query"
+      class="navigation-search"
+      label="查找站点与作品"
+      name="navigation-search"
+      placeholder="查找站点、作品或技术"
+    />
     <p v-if="query" class="result-count" role="status">
       找到
       {{

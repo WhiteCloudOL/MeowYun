@@ -79,7 +79,7 @@ onBeforeUnmount(() => {
     <span :style="{ transform: 'scaleX(' + progress / 100 + ')' }"></span>
   </div>
   <aside class="reading-tools" aria-label="阅读工具">
-    <div v-if="message || shareMessage" class="reading-feedback">
+    <div v-if="message || shareMessage || manualText" class="reading-feedback">
       <p role="status">{{ message || shareMessage }}</p>
       <input
         v-if="manualText"
@@ -165,5 +165,16 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-border);
   border-radius: 0.3rem;
   padding: 0.5rem;
+}
+@media (max-width: 760px) {
+  .reading-tools {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: fit-content;
+    max-width: 100%;
+    margin-block: 1.5rem;
+    flex-wrap: wrap;
+  }
 }
 </style>

@@ -89,6 +89,7 @@ watchEffect(() =>
             </header>
             <div class="article-body"><MarkdownContent :html="rendered.html" /></div>
           </article>
+          <ReadingTools :title="article.title" />
           <section v-if="article.sourceUrl" class="article-source paper">
             <h2>继续阅读完整文档</h2>
             <p>这里是简要导读，完整步骤、版本说明与注意事项请前往文档站查看。</p>
@@ -111,8 +112,7 @@ watchEffect(() =>
           :title="siteConfig.sections.articles.toc.title"
           :headings="headings"
         />
-      </div>
-      <ReadingTools :title="article.title" /></template
+      </div> </template
     ><EmptyState
       v-else
       label="404 · 文章未找到"
