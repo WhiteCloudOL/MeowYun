@@ -53,62 +53,45 @@ function preventDisabled(event: Event) {
 <style scoped>
 .base-button {
   display: inline-flex;
-  min-height: 2.75rem;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: 0.7rem 1.1rem;
+  gap: 0.5rem;
+  min-height: var(--tap-size);
+  padding: 0.65rem 1.2rem;
   border: 1px solid transparent;
   border-radius: var(--radius-round);
-  cursor: pointer;
   font-size: var(--text-sm);
-  font-weight: 700;
-  line-height: 1.2;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
   transition:
     transform var(--transition-press),
-    box-shadow var(--transition-fast),
-    background-color var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
-
 .base-button--primary {
-  background: linear-gradient(135deg, var(--color-primary), #d986c7);
-  box-shadow: 0 0.5rem 1.2rem rgb(217 95 147 / 24%);
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--color-link) 30%, transparent);
 }
-
 .base-button--secondary {
+  background: var(--color-surface);
   border-color: var(--color-border);
-  background: var(--color-surface-raised);
-  color: var(--color-text);
 }
-
 .base-button--quiet {
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-link);
 }
-
+.base-button:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
 .base-button:active {
-  transform: scale(0.97);
+  transform: translateY(2px);
+  box-shadow: none;
 }
-
 .base-button[aria-disabled='true'] {
+  opacity: 0.55;
   cursor: not-allowed;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-@media (hover: hover) {
-  .base-button--primary:hover {
-    box-shadow: 0 0.65rem 1.5rem rgb(217 95 147 / 32%);
-    transform: translateY(-0.14rem) rotate(-0.5deg);
-  }
-
-  .base-button--secondary:hover,
-  .base-button--quiet:hover {
-    background: var(--color-primary-soft);
-    color: var(--color-text);
-  }
 }
 </style>

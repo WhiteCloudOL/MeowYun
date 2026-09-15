@@ -1,81 +1,64 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed } from 'vue'
+import { siteConfig } from '@/config/site'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import IconGlyph from '@/components/ui/IconGlyph.vue'
-
-const props = defineProps<{
-  destination: string
-  label: string
-  delaySeconds: number
-}>()
-
-const remainingSeconds = ref(Math.max(0, Math.ceil(props.delaySeconds)))
-let redirectTimer: ReturnType<typeof setInterval> | undefined
-
-function redirectNow() {
-  if (redirectTimer) clearInterval(redirectTimer)
-  window.location.replace(props.destination)
-}
-
-onMounted(() => {
-  if (remainingSeconds.value === 0) {
-    redirectNow()
-    return
+const props = defineProps<{ destination: string; label: string; delaySeconds: number }>()
+// 中转目标只来自启用的站点配置；不读取 query URL，不自动跳走，访客可立即选择继续或取消。
+const destination = computed(() =>
+  siteConfig.redirects.find((x) => x.enabled && x.to === props.destination),
+)
+const hostname = computed(() => {
+  try {
+    return new URL(destination.value?.to ?? '').hostname
+  } catch {
+    return ''
   }
-
-  redirectTimer = setInterval(() => {
-    remainingSeconds.value -= 1
-    if (remainingSeconds.value <= 0) redirectNow()
-  }, 1000)
 })
-
-onBeforeUnmount(() => {
-  if (redirectTimer) clearInterval(redirectTimer)
-})
+const description = computed(
+  () =>
+    siteConfig.sections.navigation.items.find((x) => x.href === props.destination)?.description ??
+    '即将访问配置中的外部站点。',
+)
 </script>
-
 <template>
-  <section class="redirect-view page-shell" aria-live="polite">
-    <IconGlyph name="external-link" :size="28" />
-    <p class="eyebrow">REDIRECTING</p>
-    <h1>
-      <span>正在前往</span>
-      <strong>{{ label }}</strong>
-    </h1>
-    <p>将在 {{ remainingSeconds }} 秒后自动跳转，也可以立即继续。</p>
-    <BaseButton @click="redirectNow">立即访问</BaseButton>
-  </section>
+  <div class="page-shell page-content">
+    <EmptyState
+      icon="external-link"
+      label="外部站点"
+      :title="destination ? '前往' + label : '这个入口暂不可用'"
+      :description="description"
+      ><div class="redirect-actions">
+        <p v-if="hostname" class="destination-host">{{ hostname }}</p>
+        <p class="muted">页面会留在这里，直到你选择继续。</p>
+        <div>
+          <BaseButton v-if="destination" :href="destination.to">立即访问</BaseButton
+          ><BaseButton to="/navigation" variant="secondary">取消，回到导航</BaseButton>
+        </div>
+      </div></EmptyState
+    >
+  </div>
 </template>
-
 <style scoped>
-.redirect-view {
+.redirect-actions {
   display: grid;
-  min-height: 70vh;
-  align-content: center;
-  justify-items: center;
-  gap: var(--space-4);
-  text-align: center;
+  gap: 1.5rem;
+  min-width: 0;
 }
-
-.redirect-view > svg {
-  color: var(--anime-accent-soft);
+.redirect-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
 }
-
-.redirect-view h1 {
-  display: grid;
-  max-width: 15ch;
-  font-size: clamp(2rem, 7vw, 4rem);
-  letter-spacing: -0.055em;
-  text-wrap: balance;
+.destination-host {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+  padding: 0.75rem;
+  background: var(--color-background-soft);
+  border-radius: var(--radius-small);
 }
-
-.redirect-view h1 strong {
-  font: inherit;
-}
-
-.redirect-view > p:not(.eyebrow) {
-  max-width: 32rem;
-  color: var(--anime-text-soft);
-  line-height: 1.75;
+.redirect-actions .muted {
+  font-size: var(--text-sm);
 }
 </style>

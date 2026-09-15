@@ -4,7 +4,39 @@ import { updateSeo } from '@/utils/seo'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  scrollBehavior: (to) => (to.hash ? { el: to.hash, behavior: 'smooth' } : { top: 0 }),
+  async scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    const quiet =
+      document.documentElement.dataset.quiet === 'true' ||
+      matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (to.hash) {
+      // 等待短转场挂载目标；读取共享 scroll-margin，避免 Router 的默认零偏移盖住标题。
+      let id: string
+      try {
+        id = decodeURIComponent(to.hash.slice(1))
+      } catch {
+        return false
+      }
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const target = document.getElementById(id)
+        if (target)
+          return {
+            el: target,
+            top: parseFloat(getComputedStyle(target).scrollMarginTop) || 0,
+            behavior: quiet ? 'auto' : 'smooth',
+          }
+        await new Promise((resolve) => setTimeout(resolve, 20))
+      }
+      return false
+    }
+    // 轻量过滤保持视口；浏览历史恢复交给 Router 的 savedPosition。
+    if (
+      to.path === from.path ||
+      (String(to.name).startsWith('articles') && String(from.name).startsWith('articles'))
+    )
+      return false
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/',

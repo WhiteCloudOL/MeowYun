@@ -9,7 +9,7 @@
     <link rel="alternate" type="application/rss+xml" title="清蒸云鸭 RSS" href="/rss.xml" />
     <link rel="canonical" href="https://meowyun.cn/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b1230" />
+    <meta name="theme-color" content="#fbf7f5" />
     <meta name="color-scheme" content="dark light" />
     <meta name="robots" content="index, follow" />
     <meta
@@ -42,13 +42,21 @@
     <meta name="twitter:image" content="https://meowyun.cn/og-card.webp" />
     <script>
       // 在 Vue 启动前解析主题，避免页面首次绘制时出现明暗闪烁。
-      const preference = localStorage.getItem('meowyun-theme') || 'system'
-      document.documentElement.dataset.theme =
-        preference === 'system'
-          ? matchMedia('(prefers-color-scheme: dark)').matches
+      let preference = 'system'
+      try {
+        preference = localStorage.getItem('meowyun-theme') || 'system'
+      } catch {
+        /* 禁用存储时跟随系统。 */
+      }
+      const theme =
+        preference === 'light' || preference === 'dark'
+          ? preference
+          : matchMedia('(prefers-color-scheme: dark)').matches
             ? 'dark'
             : 'light'
-          : preference
+      document.documentElement.dataset.theme = theme
+      document.querySelector('meta[name="theme-color"]').content =
+        theme === 'dark' ? '#1f1b25' : '#fbf7f5'
     </script>
     <title>清蒸云鸭 · 个人主页</title>
   </head>

@@ -111,7 +111,9 @@ function readArticleMetadata(): ArticleMetadata[] {
 function replaceMeta(html: string, attribute: 'name' | 'property', key: string, content: string) {
   const tag = `<meta ${attribute}="${key}" content="${escapeXml(content)}" />`
   const pattern = new RegExp(`<meta\\s+${attribute}="${key}"[\\s\\S]*?>`, 'i')
-  return pattern.test(html) ? html.replace(pattern, tag) : html.replace('</head>', `    ${tag}\n  </head>`)
+  return pattern.test(html)
+    ? html.replace(pattern, tag)
+    : html.replace('</head>', `    ${tag}\n  </head>`)
 }
 
 function renderRouteHtml(baseHtml: string, seo: RouteSeo) {
@@ -138,7 +140,8 @@ function renderRouteHtml(baseHtml: string, seo: RouteSeo) {
     ['name', 'twitter:image', imageUrl],
   ]
 
-  for (const [attribute, key, content] of metadata) html = replaceMeta(html, attribute, key, content)
+  for (const [attribute, key, content] of metadata)
+    html = replaceMeta(html, attribute, key, content)
 
   if (seo.type === 'article') {
     const articleMeta = [
@@ -170,7 +173,7 @@ function renderRouteHtml(baseHtml: string, seo: RouteSeo) {
 
     html = html.replace(
       '</head>',
-      `    ${articleMeta}\n    <script type="application/ld+json">${structuredData}</script>\n  </head>`,
+      `    ${articleMeta}\n    <script id="site-structured-data" type="application/ld+json">${structuredData}</script>\n  </head>`,
     )
   }
 

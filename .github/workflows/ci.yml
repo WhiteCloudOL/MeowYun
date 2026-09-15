@@ -45,6 +45,9 @@ jobs:
       - name: Type-check
         run: npm run type-check
 
+      - name: Regression tests
+        run: npm test
+
       - name: Build production site
         run: npm run build-only
 

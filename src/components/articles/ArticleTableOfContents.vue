@@ -1,313 +1,236 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useMotion } from '@/composables/useMotion'
+import IconGlyph from '@/components/ui/IconGlyph.vue'
 import type { ArticleHeading } from '@/content/articles'
-
-const props = defineProps<{
-  title: string
-  headings: ArticleHeading[]
-}>()
-
-const listElement = ref<HTMLElement>()
+const props = defineProps<{ title: string; headings: ArticleHeading[] }>()
+const router = useRouter()
+const route = useRoute()
+const { quietEffective } = useMotion()
+const list = ref<HTMLElement>()
+const trigger = ref<HTMLButtonElement>()
+const opened = ref(false)
 const activeId = ref(props.headings[0]?.id ?? '')
-const indicatorStyle = ref<Record<string, string>>({ opacity: '0' })
-const activeIndex = computed(() =>
-  Math.max(
-    0,
-    props.headings.findIndex((heading) => heading.id === activeId.value),
-  ),
-)
-
-let animationFrame = 0
-let unlockTimer: ReturnType<typeof setTimeout> | undefined
-let lockedId = ''
-
-function headingElements() {
-  return props.headings
-    .map((heading) => document.getElementById(heading.id))
-    .filter((element): element is HTMLElement => Boolean(element))
-}
-
-async function updateIndicator() {
+const activeTitle = computed(() => props.headings.find((h) => h.id === activeId.value)?.text)
+const indicator = ref({ height: '0px', transform: 'translateY(0)', opacity: '0' })
+let frame = 0
+let observer: ResizeObserver | undefined
+async function measure() {
   await nextTick()
-  const link = [...(listElement.value?.querySelectorAll<HTMLAnchorElement>('a') ?? [])].find(
-    (item) => decodeURIComponent(item.hash.slice(1)) === activeId.value,
+  const target = [...(list.value?.querySelectorAll<HTMLAnchorElement>('a') ?? [])].find(
+    (a) => a.dataset.heading === activeId.value,
   )
-
-  if (!link) {
-    indicatorStyle.value = { opacity: '0' }
-    return
-  }
-
-  indicatorStyle.value = {
-    height: `${link.offsetHeight}px`,
-    opacity: '1',
-    transform: `translate3d(0, ${link.offsetTop}px, 0)`,
-  }
+  if (target)
+    indicator.value = {
+      height: target.offsetHeight + 'px',
+      transform: 'translateY(' + target.offsetTop + 'px)',
+      opacity: '1',
+    }
 }
-
-function updateActiveHeading() {
-  animationFrame = 0
-  if (lockedId) return
-
-  const targets = headingElements()
-  const firstTarget = targets[0]
-  if (!firstTarget) return
-
-  // 阅读基准线固定在视口上部，标题越过该线时立即把目录交给下一节。
-  const readingLine = Math.min(180, window.innerHeight * 0.28)
-  let current = firstTarget
-
-  for (const target of targets) {
-    if (target.getBoundingClientRect().top <= readingLine) current = target
-    else break
-  }
-
-  if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4) {
-    current = targets.at(-1) ?? current
-  }
-
-  if (current.id !== activeId.value) activeId.value = current.id
+function update() {
+  frame = 0
+  const targets = props.headings
+    .map((h) => document.getElementById(h.id))
+    .filter((x): x is HTMLElement => !!x)
+  const margin = targets[1] ? parseFloat(getComputedStyle(targets[1]).scrollMarginTop) : 0
+  const line = Math.max(
+    (document.querySelector('.app-header')?.getBoundingClientRect().bottom ?? 80) + 24,
+    margin + 24,
+  )
+  activeId.value =
+    targets.filter((x) => x.getBoundingClientRect().top <= line).at(-1)?.id ?? targets[0]?.id ?? ''
+  void measure()
 }
-
-function scheduleActiveUpdate() {
-  if (!animationFrame) animationFrame = window.requestAnimationFrame(updateActiveHeading)
+function schedule() {
+  if (!frame) frame = requestAnimationFrame(update)
 }
-
-function releaseNavigationLock() {
-  lockedId = ''
-  if (unlockTimer) clearTimeout(unlockTimer)
-  scheduleActiveUpdate()
-}
-
-function navigateToHeading(event: MouseEvent, id: string) {
+async function navigate(event: MouseEvent, id: string) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
   event.preventDefault()
   const target = document.getElementById(id)
   if (!target) return
-
-  lockedId = id
-  activeId.value = id
-  window.history.replaceState(null, '', `#${encodeURIComponent(id)}`)
-  target.scrollIntoView({
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    block: 'start',
-  })
-
-  if (unlockTimer) clearTimeout(unlockTimer)
-  unlockTimer = setTimeout(releaseNavigationLock, 850)
-}
-
-function cancelProgrammaticScroll() {
-  if (lockedId) releaseNavigationLock()
-}
-
-async function initializeTracking() {
+  close()
   await nextTick()
-  const hash = decodeURIComponent(window.location.hash.slice(1))
-  activeId.value = props.headings.some((heading) => heading.id === hash)
-    ? hash
-    : props.headings[0]?.id ?? ''
-  scheduleActiveUpdate()
-  void updateIndicator()
+  if (route.hash === '#' + id)
+    target.scrollIntoView({ behavior: quietEffective.value ? 'auto' : 'smooth', block: 'start' })
+  else await router.push({ path: route.path, query: route.query, hash: '#' + id })
+  activeId.value = id
 }
-
+function close() {
+  const wasOpen = opened.value
+  opened.value = false
+  if (wasOpen) trigger.value?.focus()
+}
+function keydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && opened.value) {
+    e.preventDefault()
+    close()
+  }
+}
+// resize 同时重算活动章节和指示条；无滚动锁，用户可随时打断原生滚动。
 onMounted(() => {
-  void initializeTracking()
-  window.addEventListener('scroll', scheduleActiveUpdate, { passive: true })
-  window.addEventListener('resize', scheduleActiveUpdate)
-  window.addEventListener('wheel', cancelProgrammaticScroll, { passive: true })
-  window.addEventListener('touchstart', cancelProgrammaticScroll, { passive: true })
+  window.addEventListener('scroll', schedule, { passive: true })
+  window.addEventListener('resize', schedule)
+  observer = new ResizeObserver(schedule)
+  if (list.value) observer.observe(list.value)
+  schedule()
 })
-
-watch(() => props.headings, initializeTracking, { deep: true })
-watch(activeId, updateIndicator)
-
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', scheduleActiveUpdate)
-  window.removeEventListener('resize', scheduleActiveUpdate)
-  window.removeEventListener('wheel', cancelProgrammaticScroll)
-  window.removeEventListener('touchstart', cancelProgrammaticScroll)
-  if (animationFrame) window.cancelAnimationFrame(animationFrame)
-  if (unlockTimer) clearTimeout(unlockTimer)
+  window.removeEventListener('scroll', schedule)
+  window.removeEventListener('resize', schedule)
+  observer?.disconnect()
+  if (frame) cancelAnimationFrame(frame)
 })
+watch(
+  () => props.headings,
+  () => {
+    close()
+    schedule()
+  },
+)
+watch([activeId, opened], measure)
 </script>
-
 <template>
-  <aside v-if="headings.length" class="article-toc">
-    <header class="article-toc__header">
+  <aside v-if="headings.length" class="article-toc" @keydown="keydown">
+    <button
+      ref="trigger"
+      type="button"
+      class="toc-mobile-toggle"
+      :aria-expanded="opened"
+      aria-controls="article-toc-list"
+      @click="opened = !opened"
+    >
+      <IconGlyph name="book-open" :size="18" /><span
+        >{{ opened ? '收起目录' : '打开目录'
+        }}<small v-if="activeTitle">{{ activeTitle }}</small></span
+      ><IconGlyph :name="opened ? 'x' : 'arrow-down'" :size="18" />
+    </button>
+    <header class="toc-desktop-title">
       <h2>{{ title }}</h2>
-      <span>{{ String(activeIndex + 1).padStart(2, '0') }} / {{ String(headings.length).padStart(2, '0') }}</span>
+      <span>{{ headings.length }} 节</span>
     </header>
-
-    <nav ref="listElement" class="article-toc__list" aria-label="文章目录">
-      <i class="article-toc__indicator" :style="indicatorStyle" aria-hidden="true"></i>
-      <a
+    <nav
+      id="article-toc-list"
+      ref="list"
+      class="toc-list"
+      :class="{ 'is-open': opened }"
+      aria-label="文章目录"
+    >
+      <i class="toc-indicator" :style="indicator" aria-hidden="true"></i
+      ><a
         v-for="heading in headings"
         :key="heading.id"
-        :href="`#${heading.id}`"
-        :class="{ 'is-active': activeId === heading.id }"
+        :href="'#' + heading.id"
+        :data-heading="heading.id"
         :aria-current="activeId === heading.id ? 'location' : undefined"
-        :style="{ '--toc-depth': heading.level - (headings[0]?.level ?? 1) }"
-        @click="navigateToHeading($event, heading.id)"
+        :style="{
+          paddingLeft: 0.75 + Math.max(0, heading.level - (headings[0]?.level ?? 1)) * 0.65 + 'rem',
+        }"
+        @click="navigate($event, heading.id)"
+        >{{ heading.text }}</a
       >
-        <span class="article-toc__dot" aria-hidden="true"></span>
-        <span>{{ heading.text }}</span>
-      </a>
     </nav>
   </aside>
 </template>
-
 <style scoped>
 .article-toc {
+  padding: 1rem;
   min-width: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--anime-border);
-  border-radius: .8rem 1.4rem .9rem 1.1rem;
-  background: color-mix(in srgb, #b4f8c8 12%, var(--paper-surface));
-  box-shadow: .35rem .45rem 0 rgb(124 185 232 / 13%), 0 .75rem 2.5rem rgb(3 8 27 / 14%);
-  color: var(--anime-muted);
-  backdrop-filter: blur(1rem) saturate(118%);
-  transform: rotate(.45deg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
 }
-
-.article-toc::before {
-  position: absolute;
-  top: -.7rem;
-  right: 1.2rem;
-  width: 2rem;
-  height: 3rem;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
-  background: #ff9fc6;
-  content: '';
-  opacity: .78;
-}
-
-.article-toc__header {
+.toc-desktop-title {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0.15rem 0.25rem var(--space-3);
-  border-bottom: 1px solid var(--anime-border);
-}
-
-.article-toc__header h2 {
-  color: var(--anime-text);
-  font-size: var(--text-sm);
-  letter-spacing: -0.02em;
-}
-
-.article-toc__header span {
-  color: var(--anime-muted);
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.08em;
-}
-
-.article-toc__list {
-  position: relative;
-  display: grid;
-  max-height: min(30rem, calc(100vh - 13rem));
-  gap: 0.15rem;
-  margin-top: var(--space-3);
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-color: color-mix(in srgb, var(--site-accent) 28%, transparent) transparent;
-  scrollbar-width: thin;
-}
-
-.article-toc__indicator {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  right: 0;
-  left: 0;
-  border: 1px solid color-mix(in srgb, var(--site-accent) 22%, transparent);
-  border-radius: 0.72rem;
-  background: color-mix(in srgb, var(--site-accent) 10%, transparent);
-  box-shadow: inset 2px 0 color-mix(in srgb, var(--site-accent) 72%, white 8%);
-  pointer-events: none;
-  transition:
-    height 280ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity var(--transition-fast),
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.article-toc__list a {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  min-width: 0;
-  min-height: 2.35rem;
-  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.62rem;
-  padding: 0.52rem 0.7rem 0.52rem calc(0.72rem + var(--toc-depth, 0) * 0.65rem);
-  border-radius: 0.72rem;
-  color: var(--anime-muted);
-  font-size: 0.73rem;
-  line-height: 1.42;
-  transition:
-    color var(--transition-fast),
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-border-soft);
+  padding-bottom: 0.75rem;
 }
-
-.article-toc__list a > span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.toc-desktop-title h2 {
+  font-size: var(--text-sm);
 }
-
-.article-toc__dot {
-  width: 0.34rem;
-  height: 0.34rem;
-  border: 1px solid color-mix(in srgb, var(--anime-muted) 65%, transparent);
-  border-radius: 50%;
-  transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast);
+.toc-desktop-title span {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
 }
-
-.article-toc__list a.is-active {
-  color: var(--anime-text);
-  font-weight: 700;
-  transform: translateX(0.12rem);
+.toc-list {
+  position: relative;
+  max-height: calc(100dvh - var(--header-clearance) - 6rem);
+  overflow-y: auto;
+  margin-top: 0.75rem;
+  padding: 0.15rem;
 }
-
-.article-toc__list a.is-active .article-toc__dot {
-  border-color: var(--site-accent);
-  background: var(--site-accent);
-  box-shadow: 0 0 0.6rem color-mix(in srgb, var(--site-accent) 65%, transparent);
-  transform: scale(1.18);
+.toc-list a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-size);
+  padding: 0.65rem 0.75rem;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  border-radius: var(--radius-small);
 }
-
-.article-toc__list a.is-active .article-toc__dot::after {
-  display: block;
-  margin: -.55rem 0 0 -.28rem;
-  color: var(--site-accent);
-  content: '★';
-  font-size: .75rem;
+.toc-list a[aria-current] {
+  color: var(--color-link);
+  font-weight: 600;
 }
-
-@media (hover: hover) {
-  .article-toc__list a:hover {
-    color: var(--anime-text-soft);
-    transform: translateX(0.12rem);
+.toc-list a:hover {
+  background: var(--color-background-soft);
+}
+.toc-indicator {
+  position: absolute;
+  top: 0;
+  left: 0.15rem;
+  right: 0.15rem;
+  background: var(--color-primary-soft);
+  border-left: 2px solid var(--color-link);
+  border-radius: var(--radius-small);
+  transition: transform var(--transition-fast);
+  pointer-events: none;
+}
+.toc-mobile-toggle {
+  display: none;
+}
+@media (max-width: 1000px) {
+  .article-toc {
+    padding: 0.5rem 0.75rem;
   }
-}
-
-@media (max-width: 64rem) {
-  .article-toc__list {
-    max-height: none;
+  .toc-desktop-title {
+    display: none;
   }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .article-toc__indicator,
-  .article-toc__list a,
-  .article-toc__dot {
-    transition: none;
+  .toc-mobile-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: var(--tap-size);
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font-size: var(--text-sm);
+  }
+  .toc-mobile-toggle > span {
+    flex: 1;
+    min-width: 0;
+  }
+  .toc-mobile-toggle small {
+    display: block;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--text-xs);
+  }
+  .toc-list {
+    display: none;
+  }
+  .toc-list.is-open {
+    display: block;
+    max-height: 50dvh;
   }
 }
 </style>

@@ -1,92 +1,41 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import ArticleTableOfContents from '@/components/articles/ArticleTableOfContents.vue'
 import MarkdownContent from '@/components/articles/MarkdownContent.vue'
+import ReadingTools from '@/components/articles/ReadingTools.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseCard from '@/components/ui/BaseCard.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
+import { renderMarkdown } from '@/content/articles/renderer'
 import { articles, getArticle } from '@/content/articles'
 import { siteConfig } from '@/config/site'
 import { updateSeo } from '@/utils/seo'
-
 const route = useRoute()
 const article = computed(() => getArticle(String(route.params.slug)))
-const articleElement = ref<HTMLElement>()
-const readingProgress = ref(0)
-const shareStatus = ref('')
-let shareResetTimer: ReturnType<typeof setTimeout> | undefined
-
-const articleIndex = computed(() =>
-  article.value ? articles.findIndex((item) => item.slug === article.value?.slug) : -1,
+const rendered = computed(() =>
+  article.value ? renderMarkdown(article.value.body) : { html: '', headings: [] },
 )
-const newerArticle = computed(() =>
-  articleIndex.value > 0 ? articles[articleIndex.value - 1] : undefined,
-)
-const olderArticle = computed(() =>
-  articleIndex.value >= 0 && articleIndex.value < articles.length - 1
-    ? articles[articleIndex.value + 1]
-    : undefined,
-)
-const tocHeadings = computed(() => {
-  if (!article.value || !siteConfig.sections.articles.toc.enabled) return []
-
-  const requestedMin = Math.max(1, Math.min(4, siteConfig.sections.articles.toc.minLevel))
-  const requestedMax = Math.max(1, Math.min(4, siteConfig.sections.articles.toc.maxLevel))
-  const minLevel = Math.min(requestedMin, requestedMax)
-  const maxLevel = Math.max(requestedMin, requestedMax)
-
-  return article.value.headings.filter(
-    (heading) => heading.level >= minLevel && heading.level <= maxLevel,
-  )
+const index = computed(() => articles.findIndex((a) => a.slug === article.value?.slug))
+const newer = computed(() => (index.value > 0 ? articles[index.value - 1] : undefined))
+const older = computed(() => (index.value >= 0 ? articles[index.value + 1] : undefined))
+const headings = computed(() => {
+  const config = siteConfig.sections.articles.toc
+  if (!config.enabled || !article.value) return []
+  const min = Math.min(config.minLevel, config.maxLevel)
+  const max = Math.max(config.minLevel, config.maxLevel)
+  return [
+    { id: 'article-title', text: article.value.title, level: 1 as const },
+    ...rendered.value.headings,
+  ].filter((h) => h.level >= min && h.level <= max)
 })
-
-function updateReadingProgress() {
-  const element = articleElement.value
-  if (!element) return
-
-  const start = element.offsetTop
-  const distance = Math.max(1, element.offsetHeight - window.innerHeight)
-  readingProgress.value = Math.min(1, Math.max(0, (window.scrollY - start) / distance))
-}
-
-async function copyArticleLink() {
-  try {
-    await navigator.clipboard.writeText(window.location.href)
-    shareStatus.value = '文章链接已复制'
-  } catch {
-    shareStatus.value = '复制失败，请从地址栏复制链接'
-  }
-
-  if (shareResetTimer) clearTimeout(shareResetTimer)
-  shareResetTimer = setTimeout(() => (shareStatus.value = ''), 1800)
-}
-
-onMounted(() => {
-  // 使用被动滚动监听，只更新 transform 比例，不触发布局重排。
-  window.addEventListener('scroll', updateReadingProgress, { passive: true })
-  window.addEventListener('resize', updateReadingProgress)
-  updateReadingProgress()
-})
-
-watch(article, async () => {
-  await nextTick()
-  updateReadingProgress()
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('scroll', updateReadingProgress)
-  window.removeEventListener('resize', updateReadingProgress)
-  if (shareResetTimer) clearTimeout(shareResetTimer)
-})
-
-watchEffect(() => {
+watchEffect(() =>
   updateSeo(
     article.value
       ? {
-          title: `${article.value.title} · ${siteConfig.meta.name}`,
+          title: article.value.title + ' · ' + siteConfig.meta.name,
           description: article.value.description,
-          path: route.fullPath,
+          path: route.path,
           type: 'article',
           image: article.value.cover,
           publishedAt: article.value.publishedAt,
@@ -94,493 +43,226 @@ watchEffect(() => {
           tags: article.value.tags,
         }
       : {
-          title: `文章未找到 · ${siteConfig.meta.name}`,
+          title: '文章未找到 · ' + siteConfig.meta.name,
           description: '请求的文章不存在或已经移动。',
-          path: route.fullPath,
+          path: route.path,
           noIndex: true,
         },
-  )
-})
+  ),
+)
 </script>
-
 <template>
-  <article v-if="article" ref="articleElement" class="article-view page-shell">
-    <span
-      class="article-view__progress"
-      :style="{ transform: `scaleX(${readingProgress})` }"
-      aria-hidden="true"
-    ></span>
-
-    <BaseButton to="/articles" variant="quiet">
-      <IconGlyph name="arrow-right" class="article-view__back-icon" :size="16" /> 返回文章
-    </BaseButton>
-
-    <div class="article-view__layout">
-      <div class="article-view__column">
-        <BaseCard
-          class="article-view__surface"
-          :hoverable="false"
-          :padded="false"
-          variant="solid"
-        >
-          <div class="article-view__rings" aria-hidden="true">
-            <i v-for="index in 8" :key="index"></i>
-          </div>
-          <header class="article-view__header">
-            <h1 id="article-title">{{ article.title }}</h1>
-            <p class="article-view__description">{{ article.description }}</p>
-
-            <div class="article-view__meta-row">
-              <div class="article-view__meta">
-                <span>
-                  <IconGlyph name="calendar-days" :size="15" />
-                  <time :datetime="article.publishedAt">发布于 {{ article.displayDate }}</time>
-                </span>
-                <span v-if="article.updatedAt">
-                  <IconGlyph name="clock" :size="15" />
-                  <time :datetime="article.updatedAt">更新于 {{ article.displayUpdatedAt }}</time>
-                </span>
+  <div class="article-view page-shell page-content">
+    <template v-if="article"
+      ><RouterLink class="text-link article-back" to="/articles"
+        ><IconGlyph name="arrow-right" class="back-arrow" :size="16" />返回文章归档</RouterLink
+      >
+      <div class="article-layout">
+        <div class="article-column">
+          <article class="article-surface">
+            <header class="article-header">
+              <p v-if="article.sourceUrl" class="eyebrow">导读 · 本站简要笔记</p>
+              <h1 id="article-title">{{ article.title }}</h1>
+              <p class="article-description">{{ article.description }}</p>
+              <div class="article-meta">
+                <time :datetime="article.publishedAt">发布于 {{ article.displayDate }}</time
+                ><time v-if="article.updatedAt" :datetime="article.updatedAt"
+                  >更新于 {{ article.displayUpdatedAt }}</time
+                >
+              </div>
+              <div class="article-tags">
                 <RouterLink
                   v-for="tag in article.tags"
                   :key="tag"
-                  :to="`/articles/tags/${encodeURIComponent(tag)}`"
+                  class="chip"
+                  :to="'/articles/tags/' + encodeURIComponent(tag)"
+                  >{{ tag }}</RouterLink
                 >
-                  # {{ tag }}
-                </RouterLink>
               </div>
-
-              <div class="article-view__share-control">
-                <button
-                  class="article-view__share-button"
-                  type="button"
-                  :aria-label="shareStatus || '复制文章分享链接'"
-                  title="复制文章分享链接"
-                  @click="copyArticleLink"
-                >
-                  <IconGlyph
-                    :name="shareStatus === '文章链接已复制' ? 'check' : 'share-2'"
-                    :size="17"
-                  />
-                </button>
-                <Transition name="share-tip">
-                  <span v-if="shareStatus" class="article-view__share-tip" role="status">
-                    {{ shareStatus }}
-                  </span>
-                </Transition>
-              </div>
-            </div>
-          </header>
-
-          <div class="article-view__body">
-            <MarkdownContent :html="article.contentHtml" />
-          </div>
-        </BaseCard>
-
-        <footer v-if="article.sourceUrl" class="article-view__source">
-          <p>这里是简要导读，完整步骤、版本说明与注意事项请前往文档站查看。</p>
-          <BaseButton :href="article.sourceUrl" target="_blank" variant="secondary">
-            {{ article.sourceLabel ?? '查看完整文档' }}
-            <IconGlyph name="arrow-up-right" :size="16" />
-          </BaseButton>
-        </footer>
-
-        <nav
-          v-if="newerArticle || olderArticle"
-          class="article-view__pager"
-          aria-label="相邻文章"
-        >
-          <RouterLink
-            v-if="newerArticle"
-            class="article-view__pager-link"
-            :to="`/articles/${newerArticle.slug}`"
-          >
-            <small>较新一篇</small>
-            <strong>{{ newerArticle.title }}</strong>
-          </RouterLink>
-          <span v-else></span>
-          <RouterLink
-            v-if="olderArticle"
-            class="article-view__pager-link article-view__pager-link--next"
-            :to="`/articles/${olderArticle.slug}`"
-          >
-            <small>较早一篇</small>
-            <strong>{{ olderArticle.title }}</strong>
-          </RouterLink>
-        </nav>
+              <p v-if="article.sourceUrl" class="article-guide-note">
+                完整步骤与版本说明见
+                <a :href="article.sourceUrl" target="_blank" rel="noopener noreferrer"
+                  >{{ article.sourceLabel ?? '原始文档' }}
+                  <IconGlyph name="arrow-up-right" :size="14" /></a
+                >。
+              </p>
+            </header>
+            <div class="article-body"><MarkdownContent :html="rendered.html" /></div>
+          </article>
+          <section v-if="article.sourceUrl" class="article-source paper">
+            <h2>继续阅读完整文档</h2>
+            <p>这里是简要导读，完整步骤、版本说明与注意事项请前往文档站查看。</p>
+            <BaseButton :href="article.sourceUrl" target="_blank" variant="secondary"
+              >{{ article.sourceLabel ?? '查看完整文档'
+              }}<IconGlyph name="arrow-up-right" :size="16"
+            /></BaseButton>
+          </section>
+          <nav v-if="newer || older" class="article-pager" aria-label="相邻文章">
+            <RouterLink v-if="newer" :to="'/articles/' + newer.slug"
+              ><span>较新一篇</span><strong>{{ newer.title }}</strong></RouterLink
+            ><RouterLink v-if="older" :to="'/articles/' + older.slug"
+              ><span>较早一篇</span><strong>{{ older.title }}</strong></RouterLink
+            >
+          </nav>
+        </div>
+        <ArticleTableOfContents
+          v-if="headings.length"
+          class="article-toc-position"
+          :title="siteConfig.sections.articles.toc.title"
+          :headings="headings"
+        />
       </div>
-
-      <ArticleTableOfContents
-        v-if="tocHeadings.length"
-        class="article-view__toc"
-        :title="siteConfig.sections.articles.toc.title"
-        :headings="tocHeadings"
-      />
-    </div>
-  </article>
-
-  <section v-else class="article-view article-view--missing page-shell">
-    <p class="eyebrow">404</p>
-    <h1>这篇文章还没有出现</h1>
-    <p>链接可能已经变化，也可能只是云层暂时挡住了它。</p>
-    <BaseButton to="/articles">查看其他文章</BaseButton>
-  </section>
+      <ReadingTools :title="article.title" /></template
+    ><EmptyState
+      v-else
+      label="404 · 文章未找到"
+      title="这篇文章没有在这里"
+      description="文章地址可能已经变化。可以回到归档查找标题，或从首页继续浏览。"
+      ><BaseButton to="/articles">查看文章归档</BaseButton
+      ><BaseButton to="/" variant="secondary">回到首页</BaseButton></EmptyState
+    >
+  </div>
 </template>
-
 <style scoped>
-.article-view {
-  width: min(100%, calc(var(--page-max-width) + var(--page-padding) * 2));
-  padding-top: clamp(var(--space-6), 5vw, var(--space-12));
-  color: var(--anime-text);
+.article-back {
+  margin-bottom: 1.5rem;
+  font-size: var(--text-sm);
 }
-
-.article-view__progress {
-  position: fixed;
-  z-index: 30;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 0.18rem;
-  background: linear-gradient(90deg, #9fc5ff, #c5b5ff 55%, #ffb5d0);
-  box-shadow: 0 0 0.65rem rgb(169 184 255 / 55%);
-  transform-origin: left;
-}
-
-.article-view__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 49rem) minmax(13.5rem, 16rem);
-  align-items: start;
-  justify-content: center;
-  gap: clamp(2rem, 5vw, 4.5rem);
-  margin-top: var(--space-6);
-}
-
-.article-view__column {
-  display: grid;
-  min-width: 0;
-  gap: var(--space-6);
-}
-
-.article-view__surface {
-  overflow: visible;
-  border-color: var(--paper-edge);
-  border-radius: 1.1rem 2.4rem 1.4rem 1.8rem;
-  background:
-    radial-gradient(circle, color-mix(in srgb, var(--paper-line) 70%, transparent) 1px, transparent 1.2px) 0 0 / 18px 18px,
-    var(--paper-surface);
-  box-shadow: .75rem .9rem 0 rgb(124 185 232 / 12%), var(--paper-shadow);
-  transform: rotate(-.12deg);
-}
-
-.article-view__rings {
-  position: absolute;
-  z-index: 4;
-  top: -1rem;
-  right: 2.5rem;
-  left: 2.5rem;
-  display: flex;
-  justify-content: space-around;
-}
-
-.article-view__rings i {
-  width: .72rem;
-  height: 2.15rem;
-  border: 2px solid color-mix(in srgb, var(--anime-muted) 72%, transparent);
-  border-radius: var(--radius-round);
-  background: var(--paper-surface);
-  box-shadow: inset 0 0 .2rem rgb(45 28 53 / 18%);
-}
-
-.article-view__header {
-  display: grid;
-  gap: var(--space-4);
-  padding: clamp(var(--space-5), 4vw, var(--space-8));
-  border-bottom: 1px dashed var(--paper-edge);
-  background: linear-gradient(135deg, rgb(255 183 178 / 11%), transparent 58%);
-}
-
-.article-view h1 {
-  max-width: 19ch;
-  scroll-margin-top: 7rem;
-  font-size: clamp(1.85rem, 3vw, 2.75rem);
-  font-weight: 780;
-  letter-spacing: -0.048em;
-  line-height: 1.15;
-  text-wrap: balance;
-  text-decoration: underline;
-  text-decoration-color: rgb(255 183 178 / 42%);
-  text-decoration-thickness: .22em;
-  text-underline-offset: -.12em;
-  text-decoration-skip-ink: none;
-}
-
-.article-view__description {
-  max-width: 44rem;
-  color: var(--anime-text-soft);
-  font-size: clamp(var(--text-base), 1.5vw, var(--text-lg));
-  line-height: 1.75;
-}
-
-.article-view__meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  margin-top: var(--space-2);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--anime-border);
-}
-
-.article-view__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-4);
-  color: var(--anime-muted);
-  font-size: var(--text-xs);
-}
-
-.article-view__meta span,
-.article-view__meta a {
-  padding: .28rem .62rem;
-  border: 1px dashed color-mix(in srgb, var(--site-accent) 40%, var(--paper-edge));
-  border-radius: var(--radius-round);
-  background: color-mix(in srgb, var(--site-accent) 10%, var(--paper-surface));
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-}
-
-.article-view__meta time {
-  font-variant-numeric: tabular-nums;
-}
-
-.article-view__meta a {
-  color: color-mix(in srgb, var(--site-accent) 72%, var(--anime-text-soft));
-  transition: color var(--transition-fast);
-}
-
-.article-view__share-control {
-  position: relative;
-  flex: none;
-}
-
-.article-view__share-button {
-  display: grid;
-  width: 2.55rem;
-  height: 2.55rem;
-  place-items: center;
-  border: 1px solid var(--anime-border-bright);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--anime-glass-strong) 78%, transparent);
-  color: var(--anime-text-soft);
-  cursor: pointer;
-  box-shadow: inset 0 1px rgb(255 255 255 / 14%);
-  transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast),
-    transform var(--transition-press);
-}
-
-.article-view__share-button:active {
-  transform: scale(0.94);
-}
-
-.article-view__share-tip {
-  position: absolute;
-  z-index: 5;
-  top: calc(100% + 0.65rem);
-  right: 0;
-  width: max-content;
-  max-width: min(13rem, calc(100vw - 2rem));
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--anime-border-bright);
-  border-radius: 0.7rem;
-  background: var(--anime-popover);
-  color: var(--anime-text-soft);
-  box-shadow: var(--shadow-popover);
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  line-height: 1.4;
-  white-space: nowrap;
-  backdrop-filter: blur(1rem);
-}
-
-.share-tip-enter-active,
-.share-tip-leave-active {
-  transition:
-    opacity var(--transition-fast),
-    transform var(--transition-fast);
-}
-
-.share-tip-enter-from,
-.share-tip-leave-to {
-  opacity: 0;
-  transform: translateY(-0.25rem) scale(0.96);
-}
-
-.article-view__back-icon {
+.back-arrow {
   transform: rotate(180deg);
 }
-
-.article-view__body {
-  padding: clamp(var(--space-6), 5vw, var(--space-10));
-  border-top: 0;
+.article-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15rem;
+  align-items: start;
+  gap: 2rem;
 }
-
-.article-view__toc {
-  position: sticky;
-  top: 7rem;
+.article-column {
+  min-width: 0;
+  grid-column: 1;
+  grid-row: 1;
 }
-
-.article-view__source {
+.article-surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+}
+.article-header,
+.article-body {
+  padding: clamp(1.25rem, 4vw, 3rem);
+}
+.article-header {
+  border-bottom: 1px solid var(--color-border-soft);
+}
+.article-header h1 {
+  scroll-margin-top: calc(var(--header-clearance) + 5rem);
+  font-size: clamp(1.8rem, 3.2vw, 2.65rem);
+  line-height: 1.4;
+}
+.article-description {
+  margin-top: 1.25rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-lg);
+}
+.article-meta {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-5);
-  padding: var(--space-5) var(--space-6);
-  border: 1px solid var(--anime-border);
-  border-radius: .7rem 1.2rem .8rem 1rem;
-  background: color-mix(in srgb, #fdfd96 24%, var(--paper-surface));
-  box-shadow: .25rem .32rem 0 rgb(109 83 54 / 10%);
-  transform: rotate(.35deg);
-}
-
-.article-view__source p {
-  max-width: 36rem;
-  color: var(--anime-text-soft);
-  font-size: var(--text-sm);
-  line-height: 1.7;
-}
-
-.article-view__pager {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
-}
-
-.article-view__pager-link {
-  display: grid;
-  gap: var(--space-2);
-  min-height: 6.5rem;
-  align-content: center;
-  padding: var(--space-5);
-  border: 1px solid var(--anime-border);
-  border-radius: .65rem 1.2rem .75rem 1rem;
-  background:
-    linear-gradient(90deg, transparent 1.3rem, rgb(255 143 184 / 16%) 1.3rem, rgb(255 143 184 / 16%) calc(1.3rem + 1px), transparent calc(1.3rem + 1px)),
-    repeating-linear-gradient(180deg, transparent 0, transparent 1.65rem, var(--paper-line) 1.65rem, var(--paper-line) calc(1.65rem + 1px)),
-    var(--paper-surface);
-  box-shadow: .28rem .35rem 0 rgb(124 185 232 / 12%);
-  transition:
-    border-color var(--transition-fast),
-    transform var(--transition-fast);
-}
-
-.article-view__pager-link:first-of-type { transform: rotate(-.7deg); }
-.article-view__pager-link--next { transform: rotate(.65deg); }
-
-.article-view__pager-link--next {
-  text-align: right;
-}
-
-.article-view__pager-link small {
-  color: var(--anime-muted);
-  font-family: var(--font-mono);
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: 1.5rem;
   font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
-
-.article-view__pager-link strong {
-  overflow: hidden;
-  color: var(--anime-text);
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.article-guide-note {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-background-soft);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-small);
   font-size: var(--text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-
-@media (hover: hover) {
-  .article-view__meta a:hover {
-    color: var(--anime-text);
-  }
-
-  .article-view__share-button:hover {
-    border-color: color-mix(in srgb, var(--site-accent) 44%, var(--anime-border-bright));
-    background: color-mix(in srgb, var(--site-accent) 12%, var(--anime-glass-strong));
-    color: var(--anime-text);
-    transform: translateY(-0.1rem);
-  }
-
-  .article-view__pager-link:hover {
-    border-color: var(--anime-border-bright);
-    transform: translateY(-0.35rem) rotate(-1deg) scale(1.015);
-  }
+.article-guide-note a {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
 }
-
-.article-view--missing {
-  display: grid;
-  min-height: 60vh;
-  align-content: center;
-  justify-items: start;
-  gap: var(--space-5);
+.article-guide-note svg {
+  display: inline;
+  vertical-align: middle;
 }
-
-.article-view--missing h1 {
-  font-size: var(--text-2xl);
+.article-source {
+  margin-top: 1.5rem;
 }
-
-.article-view--missing p:not(.eyebrow) {
+.article-source h2 {
+  font-size: var(--text-lg);
+  margin-bottom: 0.75rem;
+}
+.article-source p {
+  margin-bottom: 1rem;
+  font-size: var(--text-sm);
   color: var(--color-text-secondary);
 }
-
-@media (max-width: 36rem) {
-  .article-view__header {
-    padding: var(--space-5);
+.article-pager {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.article-pager a {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+.article-pager span {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.article-pager strong {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.article-pager a:hover {
+  background: var(--color-primary-soft);
+}
+.article-toc-position {
+  position: sticky;
+  top: var(--header-clearance);
+  grid-column: 2;
+  grid-row: 1;
+}
+@media (max-width: 1000px) {
+  .article-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
   }
-
-  .article-view h1 {
-    font-size: clamp(1.75rem, 8.2vw, 2rem);
+  .article-column {
+    grid-column: 1;
+    grid-row: 2;
   }
-
-  .article-view__meta-row {
-    align-items: flex-end;
+  .article-toc-position {
+    grid-column: 1;
+    grid-row: 1;
+    z-index: 10;
   }
-
-  .article-view__share-tip {
-    top: auto;
-    right: 0;
-    bottom: calc(100% + 0.65rem);
+}
+@media (max-width: 540px) {
+  .article-view {
+    padding-top: 0.5rem;
   }
-
-  .article-view__source {
-    align-items: stretch;
-    flex-direction: column;
-    padding-inline: 0;
-  }
-
-  .article-view__pager {
+  .article-pager {
     grid-template-columns: 1fr;
   }
-
-  .article-view__pager-link--next {
-    text-align: left;
-  }
-}
-
-@media (max-width: 58rem) {
-  .article-view__layout {
-    grid-template-columns: minmax(0, 49rem);
-  }
-
-  .article-view__toc {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .article-view__share-button,
-  .share-tip-enter-active,
-  .share-tip-leave-active {
-    transition: none;
+  .article-description {
+    font-size: var(--text-base);
   }
 }
 </style>

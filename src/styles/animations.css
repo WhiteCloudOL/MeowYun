@@ -1,110 +1,60 @@
-.page-material-enter-active,
-.page-rise-enter-active,
-.page-detail-enter-active,
+/* 入场默认可见；只在短暂的进入阶段增强，不持有 transform 终态。 */
+@keyframes paper-arrive {
+  from {
+    opacity: 0.2;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-8px);
+  }
+  to {
+    transform: translateX(8px);
+  }
+}
 .page-fade-enter-active {
   transition:
-    opacity 520ms var(--ease-spring),
-    transform 680ms var(--ease-spring-bold),
-    filter 480ms var(--ease-spring);
-  transform-origin: 50% 12%;
+    opacity var(--transition-fast),
+    transform var(--transition-normal);
 }
-
-.page-material-leave-active,
-.page-rise-leave-active,
-.page-detail-leave-active,
-.page-fade-leave-active {
-  transition:
-    opacity 180ms var(--ease-spring),
-    transform 240ms var(--ease-spring-bold);
-}
-
-.page-material-enter-from {
-  opacity: 0;
-  filter: blur(0.45rem) saturate(0.7);
-  transform: translateY(0.85rem) scale(0.965) rotate(0.25deg);
-}
-
-.page-material-leave-to {
-  opacity: 0;
-  transform: scale(0.995);
-}
-
-.page-rise-enter-from {
-  opacity: 0;
-  filter: blur(0.28rem);
-  transform: translateY(1.6rem) scale(0.975) rotate(-0.2deg);
-}
-
-.page-rise-leave-to {
-  opacity: 0;
-  transform: translateY(-0.35rem);
-}
-
-.page-detail-enter-from {
-  opacity: 0;
-  filter: blur(0.25rem);
-  transform: translateX(1.5rem) rotateY(-1.6deg);
-}
-
-.page-detail-leave-to {
-  opacity: 0;
-  transform: translateX(-0.35rem);
-}
-
 .page-fade-enter-from {
   opacity: 0;
-  transform: translateY(0.7rem) scale(0.98);
+  transform: translateY(6px);
 }
-
+.page-fade-leave-active {
+  transition: opacity 120ms;
+}
 .page-fade-leave-to {
   opacity: 0;
-  transform: scale(0.995);
 }
-
-.background-shift-enter-active,
-.background-shift-leave-active {
+.popover-enter-active,
+.popover-leave-active {
   transition:
-    opacity 720ms var(--ease-spring),
-    transform 900ms var(--ease-spring);
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
-
-.background-shift-enter-from {
+.popover-enter-from,
+.popover-leave-to {
   opacity: 0;
-  transform: scale(1.025);
+  transform: translateY(-4px);
 }
-
-.background-shift-leave-to {
-  opacity: 0;
-  transform: scale(0.99);
+:root[data-quiet='true'] *,
+:root[data-quiet='true'] *::before,
+:root[data-quiet='true'] *::after {
+  animation: none !important;
+  scroll-behavior: auto !important;
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .page-material-enter-active,
-  .page-rise-enter-active,
-  .page-detail-enter-active,
-  .page-fade-enter-active {
-    transition: opacity 220ms var(--ease-spring);
-  }
-
-
-  .background-shift-enter-active,
-  .background-shift-leave-active {
-    transition: opacity 220ms var(--ease-spring);
-  }
-
-  .page-material-enter-from,
-  .page-rise-enter-from,
-  .page-detail-enter-from,
-  .page-material-leave-to,
-  .page-rise-leave-to,
-  .page-detail-leave-to {
-    filter: none;
-    transform: none;
-  }
-
-
-  .background-shift-enter-from,
-  .background-shift-leave-to {
-    transform: none;
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

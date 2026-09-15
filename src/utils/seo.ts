@@ -106,7 +106,11 @@ function updateStructuredData(pageUrl: string, options: SeoOptions, imageUrl: st
 export function updateSeo(options: SeoOptions = {}) {
   const title = options.title ?? siteConfig.meta.title
   const description = options.description ?? siteConfig.meta.description
-  const pageUrl = absoluteUrl(options.path ?? window.location.pathname)
+  // Canonical 代表稳定页面，章节和搜索条件只留在可分享地址，不进入结构化 URL。
+  const canonical = new URL(absoluteUrl(options.path ?? window.location.pathname))
+  canonical.search = ''
+  canonical.hash = ''
+  const pageUrl = canonical.toString()
   const imageUrl = absoluteUrl(options.image ?? siteConfig.meta.ogImage)
   const robots = options.noIndex ? 'noindex, nofollow' : 'index, follow'
 

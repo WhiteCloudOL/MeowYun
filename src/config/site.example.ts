@@ -6,6 +6,9 @@ import type { SiteConfig } from './schema'
 
 /** 复制本文件为 site.ts 后填写资料；site.ts 不会被 Git 提交。 */
 export const siteConfig: SiteConfig = {
+  // 有真实近况时再填写 nowNote: { date: 'YYYY-MM-DD', text: '真实的一句话', href: '/articles' }。
+  // 项目可选 audience、status、updatedAt、note；缺省不显示，不根据提交时间推断。
+  updates: [],
   meta: {
     name: '你的名字',
     title: '你的名字 · 个人主页',

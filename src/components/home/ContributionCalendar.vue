@@ -1,474 +1,256 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import ConfigIcon from '@/components/ui/ConfigIcon.vue'
-import IconGlyph from '@/components/ui/IconGlyph.vue'
 import { siteConfig } from '@/config/site'
-
-interface ContributionDay {
-  date: string
-  count: number
-  level: number
-}
-
-interface ContributionResponse {
-  contributions?: Array<Partial<ContributionDay>>
-}
-
-const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
-
-const liveDays = ref<ContributionDay[]>([])
-const fetchState = ref<'loading' | 'live' | 'fallback'>('loading')
-const controller = new AbortController()
-
-const fallbackDays = computed<ContributionDay[]>(() => {
-  // 以用户名生成稳定的演示矩阵，接口不可用时仍保持布局完整且不会伪装成实时数据。
-  const seed = Array.from(siteConfig.sections.contributions.username).reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  )
-  const today = new Date()
-
-  return Array.from({ length: 371 }, (_, index) => {
-    const date = new Date(today)
-    date.setDate(today.getDate() - (370 - index))
-    const value = (index * 17 + seed * 7 + (index % 19) * 13) % 29
-    const level = value < 17 ? 0 : value < 21 ? 1 : value < 25 ? 2 : value < 28 ? 3 : 4
-
-    return {
-      date: date.toISOString().slice(0, 10),
-      count: level === 0 ? 0 : (value + level) % 9 || level,
-      level,
-    }
-  })
-})
-
-const days = computed(() => {
-  if (!liveDays.value.length) return fallbackDays.value
-
-  const liveMap = new Map(liveDays.value.map((day) => [day.date, day]))
-  return fallbackDays.value.map((day) => liveMap.get(day.date) ?? { ...day, count: 0, level: 0 })
-})
-
-const compactDays = computed<ContributionDay[]>(() => {
-  const source = days.value
-  const latest = source.at(-1)
-  if (!latest) return []
-
-  // 紧凑矩阵始终从周日开始、到周六结束；本周尚未到达的日期补零，避免星期行错位。
-  const sourceMap = new Map(source.map((day) => [day.date, day]))
-  const latestDate = new Date(`${latest.date}T00:00:00`)
-  const endOfWeek = new Date(latestDate)
-  endOfWeek.setDate(latestDate.getDate() + (6 - latestDate.getDay()))
-  const startOfWindow = new Date(endOfWeek)
-  startOfWindow.setDate(endOfWeek.getDate() - 370)
-
-  return Array.from({ length: 371 }, (_, index) => {
-    const date = new Date(startOfWindow)
-    date.setDate(startOfWindow.getDate() + index)
-    const key = date.toISOString().slice(0, 10)
-    return sourceMap.get(key) ?? { date: key, count: 0, level: 0 }
-  })
-})
-
-const displayedDays = computed(() => (props.compact ? compactDays.value : days.value))
-const displayedWeeks = computed(() => 53)
-
-const monthLabels = computed(() => {
-  const formatter = new Intl.DateTimeFormat('zh-CN', { month: 'short' })
-  let previousMonth = -1
-
-  return Array.from({ length: displayedWeeks.value }, (_, week) => {
-    const day = displayedDays.value[week * 7]
-    if (!day) return ''
-    const date = new Date(`${day.date}T00:00:00`)
-    const month = date.getMonth()
-    if (month === previousMonth) return ''
-    previousMonth = month
-    return formatter.format(date)
-  })
-})
-
-const total = computed(() => days.value.reduce((sum, day) => sum + day.count, 0))
-
-function normalizeDay(day: Partial<ContributionDay>): ContributionDay | undefined {
-  // 外部接口数据先归一化并限制等级范围，防止异常数值破坏网格样式。
-  if (typeof day.date !== 'string') return undefined
-  const count = Math.max(0, Number(day.count ?? 0))
-  const inferredLevel = count === 0 ? 0 : count < 3 ? 1 : count < 6 ? 2 : count < 10 ? 3 : 4
-
-  return {
-    date: day.date,
-    count,
-    level: Math.min(4, Math.max(0, Number(day.level ?? inferredLevel))),
-  }
-}
-
-async function loadContributions() {
-  const template = siteConfig.sections.contributions.apiUrl?.trim()
-  if (!template) {
-    fetchState.value = 'fallback'
-    return
-  }
-
+import BaseButton from '@/components/ui/BaseButton.vue'
+import IconGlyph from '@/components/ui/IconGlyph.vue'
+import { contributionWindow, parseContributions, type ContributionDay } from '@/utils/contributions'
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+const config = siteConfig.sections.contributions
+const state = ref<'loading' | 'live' | 'error'>('loading')
+const days = ref<ContributionDay[]>([])
+const selected = ref('')
+const errorMessage = ref('暂时无法读取贡献记录。')
+const viewport = ref<HTMLElement>()
+let controller: AbortController | undefined
+let timeout: ReturnType<typeof setTimeout> | undefined
+let disposed = false
+const end = computed(() => days.value.at(-1)?.date ?? '')
+const windowDates = computed(() => (end.value ? contributionWindow(end.value) : []))
+const dayMap = computed(() => new Map(days.value.map((d) => [d.date, d])))
+const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0))
+const detail = computed(() => dayMap.value.get(selected.value))
+const months = computed(() =>
+  windowDates.value
+    .filter((_, i) => i % 7 === 0)
+    .map((date, i, array) =>
+      i === 0 || date.slice(0, 7) !== array[i - 1]?.slice(0, 7)
+        ? Number(date.slice(5, 7)) + '月'
+        : '',
+    ),
+)
+async function load() {
+  if (!config.enabled) return
+  controller?.abort()
+  if (timeout) clearTimeout(timeout)
+  controller = new AbortController()
+  const request = controller
+  state.value = 'loading'
+  timeout = setTimeout(() => request.abort('timeout'), 8000)
   try {
-    // 用户名先编码再替换模板，避免特殊字符改变请求 URL 的结构。
-    const endpoint = template.replaceAll(
-      '{username}',
-      encodeURIComponent(siteConfig.sections.contributions.username),
-    )
-    const response = await fetch(endpoint, { signal: controller.signal })
-    if (!response.ok) throw new Error(`Contribution API responded ${response.status}`)
-    const payload = (await response.json()) as ContributionResponse
-    liveDays.value = (payload.contributions ?? [])
-      .map(normalizeDay)
-      .filter((day): day is ContributionDay => Boolean(day))
-    fetchState.value = liveDays.value.length ? 'live' : 'fallback'
-  } catch (error) {
-    if ((error as Error).name !== 'AbortError') fetchState.value = 'fallback'
+    if (!config.apiUrl) throw new Error('未配置公开贡献接口。')
+    // 只使用可信配置模板，不存储 Token。每次请求可取消，超时后由用户决定是否重试。
+    const endpoint = config.apiUrl.replaceAll('{username}', encodeURIComponent(config.username))
+    const response = await fetch(endpoint, { signal: request.signal })
+    if (!response.ok) throw new Error('贡献接口暂时不可用。')
+    const nextDays = parseContributions(await response.json())
+    if (disposed || request !== controller) return
+    days.value = nextDays
+    selected.value = nextDays.at(-1)?.date ?? ''
+    state.value = 'live'
+  } catch {
+    if (disposed || request !== controller) return
+    days.value = []
+    errorMessage.value =
+      request.signal.reason === 'timeout'
+        ? '读取超时，请稍后重试。'
+        : '暂时无法读取贡献记录，请稍后重试。'
+    state.value = 'error'
+  } finally {
+    if (request === controller && timeout) clearTimeout(timeout)
   }
 }
-
-onMounted(loadContributions)
-onBeforeUnmount(() => controller.abort())
+onMounted(load)
+onBeforeUnmount(() => {
+  disposed = true
+  controller?.abort()
+  if (timeout) clearTimeout(timeout)
+})
 </script>
-
 <template>
-  <section
-    class="contribution-calendar"
-    :class="{ 'contribution-calendar--compact': compact }"
-    aria-labelledby="contribution-title"
-  >
-    <header class="contribution-calendar__header">
-      <div class="contribution-calendar__identity">
-        <span class="contribution-calendar__icon">
-          <ConfigIcon name="github" provider="fontawesome" :size="21" />
-        </span>
-        <div>
-          <h2 id="contribution-title">{{ siteConfig.sections.contributions.title }}</h2>
-          <p>{{ siteConfig.sections.contributions.description }}</p>
-        </div>
+  <section v-if="config.enabled" class="contribution-calendar" aria-labelledby="contribution-title">
+    <header>
+      <div>
+        <p class="eyebrow"><IconGlyph name="github" :size="16" />公开的代码足迹</p>
+        <h2 id="contribution-title">{{ config.title }}</h2>
       </div>
-
-      <div class="contribution-calendar__actions">
-        <span class="contribution-calendar__status" :data-state="fetchState">
-          <i></i>
-          {{ fetchState === 'live' ? 'LIVE' : fetchState === 'loading' ? 'SYNC' : 'DEMO' }}
-        </span>
-        <a
-          :href="siteConfig.sections.contributions.profileUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="打开 GitHub 主页"
-        >
-          <IconGlyph name="arrow-up-right" :size="18" />
-        </a>
-      </div>
+      <a
+        class="icon-button"
+        :href="config.profileUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="在 GitHub 查看贡献"
+        ><IconGlyph name="arrow-up-right"
+      /></a>
     </header>
-
-    <div class="contribution-calendar__viewport">
+    <div v-if="state === 'loading'" class="contribution-empty" role="status">
+      正在读取公开贡献记录…
+    </div>
+    <div v-else-if="state === 'error'" class="contribution-empty">
+      <p role="status">{{ errorMessage }}</p>
+      <BaseButton variant="secondary" @click="load">重新读取</BaseButton>
+      <p class="muted">也可以直接在 GitHub 查看。</p>
+    </div>
+    <template v-else
+      ><p class="contribution-summary">{{ days[0]?.date }} — {{ end }} · {{ total }} 次贡献</p>
       <div
-        class="contribution-calendar__canvas"
-        :style="{ '--contribution-weeks': displayedWeeks }"
+        ref="viewport"
+        class="contribution-viewport"
+        tabindex="0"
+        aria-label="全年贡献图，可横向滚动"
       >
-        <div class="contribution-calendar__months" aria-hidden="true">
-          <span v-for="(month, index) in monthLabels" :key="index">{{ month }}</span>
-        </div>
-        <div class="contribution-calendar__weekdays" aria-hidden="true">
-          <span>一</span>
-          <span>三</span>
-          <span>五</span>
-        </div>
-        <div
-          class="contribution-calendar__grid"
-          role="img"
-          :aria-label="`${siteConfig.sections.contributions.username} 最近一年的 GitHub 提交足迹，共 ${total} 次贡献`"
-        >
-          <i
-            v-for="day in displayedDays"
-            :key="day.date"
-            :data-level="day.level"
-            :title="`${day.date} · ${day.count} 次贡献`"
-          ></i>
+        <div class="contribution-chart">
+          <div class="contribution-months" aria-hidden="true">
+            <span v-for="(month, index) in months" :key="index">{{ month }}</span>
+          </div>
+          <div class="contribution-weekdays" aria-hidden="true">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span
+            ><span>五</span><span>六</span>
+          </div>
+          <div
+            class="contribution-grid"
+            role="img"
+            :aria-label="'公开贡献热力图，' + total + ' 次贡献。可在下方按日期查询。'"
+          >
+            <i
+              v-for="date in windowDates"
+              :key="date"
+              :data-date="date"
+              :data-level="dayMap.get(date)?.level ?? 'unknown'"
+              :title="
+                date + ' · ' + (dayMap.has(date) ? dayMap.get(date)?.count + ' 次贡献' : '暂无记录')
+              "
+            ></i>
+          </div>
         </div>
       </div>
-    </div>
-
-    <footer class="contribution-calendar__footer">
-      <span>过去一年 · {{ total }} contributions</span>
-      <span class="contribution-calendar__legend" aria-hidden="true">
-        <small>少</small>
-        <i v-for="level in 5" :key="level" :data-level="level - 1"></i>
-        <small>多</small>
-      </span>
-    </footer>
+      <div class="contribution-detail">
+        <label for="contribution-date">查看日期</label
+        ><input
+          id="contribution-date"
+          v-model="selected"
+          type="date"
+          :min="days[0]?.date"
+          :max="end"
+        /><output for="contribution-date" aria-live="polite">{{
+          detail ? detail.count + ' 次贡献' : '该日期暂无记录'
+        }}</output>
+      </div>
+      <p class="contribution-footnote">
+        公开接口数据 · 手机可横向查看全年；缺失日期不计为零。
+      </p></template
+    >
   </section>
 </template>
-
 <style scoped>
 .contribution-calendar {
-  display: grid;
   min-width: 0;
-  gap: 1.35rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
 }
-
-.contribution-calendar__header,
-.contribution-calendar__identity,
-.contribution-calendar__actions,
-.contribution-calendar__footer {
+.contribution-calendar header {
   display: flex;
-  align-items: center;
-}
-
-.contribution-calendar__header,
-.contribution-calendar__footer {
   justify-content: space-between;
+  align-items: center;
   gap: 1rem;
 }
-
-.contribution-calendar__identity {
-  min-width: 0;
-  gap: 0.8rem;
-}
-
-.contribution-calendar__icon,
-.contribution-calendar__actions > a {
-  display: grid;
-  width: 2.85rem;
-  height: 2.85rem;
-  flex: none;
-  place-items: center;
-  border: 3px solid #4a3b32;
-  border-radius: 0.9rem;
-  background: #ffd8e4;
-  color: #2b2d42;
-  box-shadow: 3px 3px 0 #4a3b32;
-}
-
-.contribution-calendar h2 {
-  color: #2b2d42;
-  font-weight: 900;
-  font-size: var(--text-lg);
-  line-height: 1.35;
-}
-
-.contribution-calendar p {
-  overflow: hidden;
-  color: #79665b;
+.contribution-calendar .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: var(--text-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-
-.contribution-calendar__actions {
-  flex: none;
-  gap: 0.65rem;
+.contribution-calendar h2 {
+  font-size: var(--text-lg);
 }
-
-.contribution-calendar__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  padding: 0.38rem 0.55rem;
-  border: 1px solid var(--anime-border);
-  border-radius: 999px;
-  color: var(--anime-muted);
-  font-family: var(--font-mono);
-  font-size: 0.56rem;
-  letter-spacing: 0.06em;
-}
-
-.contribution-calendar__status i {
-  width: 0.35rem;
-  height: 0.35rem;
-  border-radius: 50%;
-  background: #f0a0c5;
-  box-shadow: 0 0 0.45rem rgb(240 160 197 / 62%);
-}
-
-.contribution-calendar__status[data-state='live'] i {
-  background: #9de5cf;
-  box-shadow: 0 0 0.45rem rgb(157 229 207 / 62%);
-}
-
-.contribution-calendar__viewport {
-  min-width: 0;
-  overflow-x: auto;
-  padding: 0.95rem 1rem 1.05rem;
-  border: 3px solid #4a3b32;
-  border-radius: 1.15rem;
-  background-color: #fff9d7;
-  box-shadow: 4px 4px 0 #a7e9af;
-  scrollbar-color: rgb(207 220 255 / 22%) transparent;
-  scrollbar-width: thin;
-}
-
-.contribution-calendar__canvas {
-  display: grid;
-  min-width: 42rem;
-  grid-template-columns: 1.65rem 1fr;
-  grid-template-rows: auto 1fr;
-  gap: 0.42rem 0.55rem;
-}
-
-.contribution-calendar__months {
-  display: grid;
-  grid-column: 2;
-  grid-template-columns: repeat(var(--contribution-weeks, 53), 0.67rem);
-  gap: 0.2rem;
-  color: #79665b;
-  font-family: var(--font-mono);
-  font-size: 0.53rem;
-}
-
-.contribution-calendar__months span {
-  overflow: visible;
-  white-space: nowrap;
-}
-
-.contribution-calendar__weekdays {
-  display: grid;
-  grid-row: 2;
-  grid-template-rows: repeat(3, 1fr);
-  align-items: center;
-  color: #79665b;
-  font-family: var(--font-mono);
-  font-size: 0.5rem;
-}
-
-.contribution-calendar__grid {
-  display: grid;
-  grid-row: 2;
-  grid-column: 2;
-  grid-auto-flow: column;
-  grid-template-columns: repeat(var(--contribution-weeks, 53), 0.67rem);
-  grid-template-rows: repeat(7, 0.67rem);
-  gap: 0.2rem;
-}
-
-.contribution-calendar__grid i,
-.contribution-calendar__legend i {
-  border: 1px solid rgb(74 59 50 / 28%);
-  border-radius: 58% 42% 62% 38% / 42% 55% 45% 58%;
-  background: #fff0f5;
-  box-shadow: none;
-  transition:
-    transform var(--transition-fast),
-    filter var(--transition-fast);
-}
-
-[data-level='1'] {
-  background: #ffd1df !important;
-}
-
-[data-level='2'] {
-  background: #ffacc4 !important;
-}
-
-[data-level='3'] {
-  background: #ff82a8 !important;
-}
-
-[data-level='4'] {
-  background: #d85c83 !important;
-  box-shadow: 1px 1px 0 #4a3b32 !important;
-}
-
-.contribution-calendar--compact {
-  gap: 0.8rem;
-}
-
-.contribution-calendar--compact .contribution-calendar__identity p,
-.contribution-calendar--compact .contribution-calendar__status {
-  display: none;
-}
-
-.contribution-calendar--compact .contribution-calendar__viewport {
-  overflow: hidden;
-  padding: 0.72rem 0.8rem 0.8rem;
-  border-color: #4a3b32;
-  background: #fff9d7;
-}
-
-.contribution-calendar--compact .contribution-calendar__canvas {
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: 1.2rem minmax(0, 1fr);
-  margin-inline: auto;
-}
-
-.contribution-calendar--compact .contribution-calendar__months,
-.contribution-calendar--compact .contribution-calendar__grid {
-  grid-template-columns: repeat(var(--contribution-weeks, 53), minmax(0, 1fr));
-  gap: 0.12rem;
-}
-
-.contribution-calendar--compact .contribution-calendar__grid {
-  grid-template-rows: repeat(7, auto);
-}
-
-.contribution-calendar--compact .contribution-calendar__grid i {
-  width: 100%;
-  min-width: 0;
-  aspect-ratio: 1;
-}
-
-.contribution-calendar--compact h2 {
+.contribution-empty {
+  min-height: 12rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--color-text-secondary);
   font-size: var(--text-sm);
 }
-
-.contribution-calendar--compact .contribution-calendar__footer {
-  gap: 0.6rem;
-  color: #6b584e;
-  font-size: 0.55rem;
+.contribution-summary {
+  margin-top: 1.5rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
 }
-
-.contribution-calendar--compact .contribution-calendar__icon,
-.contribution-calendar--compact .contribution-calendar__actions > a {
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: 50%;
-  background: #ffd8e4;
+.contribution-viewport {
+  overflow-x: auto;
+  margin-block: 1rem;
+  padding: 0.4rem 0 0.75rem;
 }
-
-.contribution-calendar__footer {
-  color: var(--anime-muted);
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
+.contribution-chart {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  grid-template-rows: 1.5rem auto;
+  width: 50rem;
+  gap: 0.35rem;
+  font-size: var(--text-xs);
 }
-
-.contribution-calendar__legend {
-  display: inline-flex;
+.contribution-months {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(53, 1fr);
+  white-space: nowrap;
+}
+.contribution-weekdays {
+  display: grid;
+  grid-template-rows: repeat(7, 12px);
+  gap: 3px;
+  line-height: 12px;
+}
+.contribution-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 12px);
+  grid-template-columns: repeat(53, 12px);
+  justify-content: space-between;
+  gap: 3px;
+}
+.contribution-grid i {
+  border-radius: 2px;
+  background: var(--color-border-soft);
+}
+.contribution-grid [data-level='1'] {
+  background: var(--color-secondary);
+}
+.contribution-grid [data-level='2'] {
+  background: color-mix(in srgb, var(--color-success) 45%, var(--color-secondary));
+}
+.contribution-grid [data-level='3'] {
+  background: color-mix(in srgb, var(--color-success) 75%, var(--color-secondary));
+}
+.contribution-grid [data-level='4'] {
+  background: var(--color-success);
+}
+.contribution-grid [data-level='unknown'] {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+}
+.contribution-detail {
+  display: flex;
   align-items: center;
-  gap: 0.3rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  font-size: var(--text-sm);
 }
-
-.contribution-calendar__legend i {
-  width: 0.66rem;
-  height: 0.66rem;
+.contribution-detail input {
+  min-height: var(--tap-size);
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  border-radius: var(--radius-small);
+  padding: 0.4rem;
 }
-
-@media (hover: hover) {
-  .contribution-calendar__grid i:hover {
-    z-index: 1;
-    filter: brightness(1.22);
-    transform: scale(1.28);
-  }
-}
-
-@media (max-width: 34rem) {
-  .contribution-calendar__status,
-  .contribution-calendar__identity p {
-    display: none;
-  }
-
-  .contribution-calendar__viewport {
-    margin-inline: -0.35rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .contribution-calendar__grid i {
-    transition: none;
-  }
+.contribution-footnote {
+  margin-top: 1rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
 }
 </style>

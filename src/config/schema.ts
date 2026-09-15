@@ -45,6 +45,11 @@ export interface LinkCardItem {
 
 export interface ProjectItem extends LinkCardItem {
   technologies: string[]
+  /** 只填写已经核实的信息；缺省不推断维护状态或作者推荐。 */
+  audience?: string
+  status?: string
+  updatedAt?: string
+  note?: string
 }
 
 export interface SkillItem {
@@ -87,6 +92,9 @@ export type HomeSceneBackgrounds = Partial<
 >
 
 export interface SiteConfig {
+  /** 日期与近况由作者维护；不填写时首页隐藏。 */
+  nowNote?: { date: string; text: string; href?: string; linkLabel?: string }
+  updates?: Array<{ date: string; text: string; href?: string }>
   meta: {
     name: string
     title: string

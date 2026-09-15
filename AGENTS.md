@@ -2,7 +2,7 @@
 
 ## 项目概况
 
-MeowYunCN 是 Vue 3 + TypeScript + Vite 构建的可配置个人主页与技术博客，采用二次元沉浸式背景、克制玻璃质感和响应式布局。
+MeowYunCN 是 Vue 3 + TypeScript + Vite 构建的可配置个人主页与技术博客，采用“云间手账”视觉、自然文档滚动、稳定纸面和响应式布局。
 
 当前能力：
 
@@ -19,7 +19,7 @@ MeowYunCN 是 Vue 3 + TypeScript + Vite 构建的可配置个人主页与技术�
 
 - Vue 3、Composition API、`<script setup lang="ts">`
 - Vue Router、Vite、TypeScript
-- 原生 CSS、CSS Variables、Grid / Flex、SVG
+- 原生 CSS、CSS Variables、Grid / Flex、SVG；已存在 Tailwind 4，只映射语义 Token
 - MarkdownIt、Highlight.js、Lucide、Font Awesome Brands
 - ESLint、Oxlint、Prettier、vue-tsc
 
@@ -52,12 +52,17 @@ src/
 ## 设计约束
 
 - 内容、可读性和留白优先；可爱但不幼态。
-- 保持深蓝、雾蓝、淡紫体系与轻量半透明玻璃风格。
+- 保持暖白纸面、低饱和粉色、薄荷与蓝紫；深色使用紫灰纸面。首页有性格，展示页轻盈，阅读页安静。
+- 所有主题值来自 tokens.css；CSS @theme 和 Tailwind 只映射它，禁止另外维护近似颜色。
+- 首页自然滚动，稳定分区 id；不添加 wheel 滚动锁、整页 mandatory snap 或档案内部滚动。
+- 统一 --header-clearance、44px 命中区、共享按钮/标签/浮层契约。正文使用不透明稳定纸面。
 - 动画只用于局部反馈，主要使用 `transform` 和 `opacity`。
 - 必须支持 375、768、1024、1440px，不得出现意外横向滚动。
 - 触控目标不小于 44px，交互元素必须具备语义和 `:focus-visible`。
 - 尊重 `prefers-reduced-motion`，装饰背景不得阻塞交互。
-- 不加入拟物头像框、在线状态卡、大范围强模糊、霓虹发光或持续剧烈动画。
+- 保留真实头像拍立得和项目卡带意象；不新增复杂头像框、假在线状态、大范围模糊、霓虹发光或持续剧烈动画。
+- 文章页不运行装饰循环；安静模式与系统减少动态效果实时生效，离屏和后台停止装饰。
+- 不编造 Now Note、项目维护信息、友链或贡献数据；可选字段缺失时隐藏，接口失败明确显示失败。
 
 ## 编码约定
 
@@ -90,7 +95,7 @@ src/
 
 - 新增依赖前检查是否能用现有能力完成，避免同类依赖重复。
 - 不使用 `--force` 或 `--legacy-peer-deps` 掩盖依赖问题。
-- 除非用户明确要求，不加入 Pinia、Tailwind、UI 框架、大型动画库、SSR 或后端。
+- 除非用户明确要求，不加入 Pinia、新 UI 框架、大型动画库、SSR 或后端；保留现有 Tailwind 4，不迁移框架。
 - 需要评论、订阅、管理后台、统计或 CMS 时，先给出数据模型、隐私与部署影响，再等待用户确认。
 
 ## SEO 与部署
@@ -107,12 +112,15 @@ src/
 ```sh
 npm run type-check
 npm run lint
+npm test
 npm run build
 ```
 
+`lint` 只检查；只有明确需要修复格式时才使用 `lint:fix`，避免无关全库改动。测试夹具仅放 `tests/fixtures`，不得进入正式文章 glob、RSS 和 Sitemap。
+
 视觉改动还需检查：
 
-- 375、768、1024、1440px
+- 320、375、390、768、1024、1440px、关键断点与 200% 缩放
 - 浅色、深色与跟随系统
 - 键盘焦点、移动导航、减少动态效果
 - 文章直达、标签筛选、搜索、RSS 与 404
@@ -127,3 +135,12 @@ docs: refresh project documentation
 ```
 
 提交前确认无调试输出、临时文件、敏感信息、构建产物和无关格式化改动。
+
+## 当前组件与内容契约
+
+- `components/content/ArticleCard`、`ProjectCard`、`LinkCard` 为活跃内容卡；首页与索引共享。
+- `BasePopover` 是普通非模态浮层；`QuickSearch` 与图片查看使用原生 dialog。
+- `useTheme`、`useMotion` 是共享偏好单例，存储失败安全退化，HMR 清理监听。
+- `content/articles/index.ts` 提供元数据与纯文本索引；`renderer.ts` 只随详情加载，保留全部语言与 html:false。
+- 旧 HomeDashboard、ProfileHero、QuickLinksGrid 等未引用组件是历史实现，不代表当前页面能力；不擅自删除源素材。
+- 详细页面/组件改造映射见 `docs/redesign-plan.md`。
