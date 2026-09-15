@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { vEntrance } from '@/utils/entrance'
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { articles, type Article } from '@/content/articles'
@@ -6,11 +7,19 @@ import { searchArticles } from '@/utils/search'
 import { updateSeo } from '@/utils/seo'
 import { siteConfig } from '@/config/site'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
-import ImageFallback from '@/components/ui/ImageFallback.vue'
+import CloudAvatar from '@/components/ui/CloudAvatar.vue'
 import ArticleCard from '@/components/content/ArticleCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import SearchField from '@/components/ui/SearchField.vue'
+import { readPreference, writePreference } from '@/utils/preferences'
 import { archiveSeo } from '@/utils/routeSeo'
+const view = ref<'shelf' | 'list'>(
+  readPreference('meowyun-article-view') === 'list' ? 'list' : 'shelf',
+)
+function setView(value: 'shelf' | 'list') {
+  view.value = value
+  writePreference('meowyun-article-view', value)
+}
 const route = useRoute()
 const router = useRouter()
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
@@ -95,13 +104,30 @@ watchEffect(() =>
     <section class="archive" aria-labelledby="articles-title">
       <header class="section-heading">
         <div>
-          <h1 id="articles-title">文章与笔记</h1>
+          <h1 id="articles-title">文章与实践笔记</h1>
           <p class="muted">部署经验、开源工具与实践记录。</p>
         </div>
         <a class="text-link" href="/rss.xml" target="_blank" rel="noopener noreferrer"
           ><IconGlyph name="rss" :size="16" />RSS</a
         >
       </header>
+      <div class="archive-views" aria-label="文章排列方式">
+        <button
+          type="button"
+          class="chip"
+          :aria-pressed="view === 'shelf'"
+          @click="setView('shelf')"
+        >
+          封面</button
+        ><button
+          type="button"
+          class="chip"
+          :aria-pressed="view === 'list'"
+          @click="setView('list')"
+        >
+          轻量列表
+        </button>
+      </div>
       <form class="archive-search" role="search" @submit.prevent="syncQuery(true)">
         <SearchField
           v-model="query"
@@ -150,11 +176,18 @@ watchEffect(() =>
       <section
         v-for="group in groups"
         :key="group.year"
+        v-entrance
         class="archive-year"
+        :class="{ 'archive-year--shelf': view === 'shelf' }"
         :aria-label="group.year + '年文章'"
       >
         <h2>{{ group.year }}</h2>
-        <ArticleCard v-for="article in group.items" :key="article.slug" :article="article" />
+        <ArticleCard
+          v-for="article in group.items"
+          :key="article.slug"
+          :article="article"
+          :layout="view"
+        />
       </section>
       <div v-if="!filtered.length" class="archive-empty paper">
         <IconGlyph name="search" :size="32" />
@@ -164,7 +197,7 @@ watchEffect(() =>
       </div>
     </section>
     <aside v-if="siteConfig.profile.enabled" class="archive-author" aria-label="作者资料">
-      <ImageFallback
+      <CloudAvatar
         :src="siteConfig.profile.avatar"
         :alt="siteConfig.profile.avatarAlt"
         class="archive-author__avatar"
@@ -172,7 +205,7 @@ watchEffect(() =>
       <div>
         <h2>{{ siteConfig.profile.name }}</h2>
         <p>{{ siteConfig.profile.description }}</p>
-        <RouterLink class="text-link" to="/#about"
+        <RouterLink class="text-link" to="/about"
           >关于作者 <IconGlyph name="arrow-right" :size="16"
         /></RouterLink>
       </div>
@@ -187,10 +220,7 @@ watchEffect(() =>
 }
 .archive {
   min-width: 0;
-  background: var(--color-surface);
-  padding: clamp(1rem, 3vw, 2rem);
-  border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius-large);
+  padding: 0;
 }
 .archive h1 {
   font-size: var(--text-2xl);
@@ -302,6 +332,42 @@ watchEffect(() =>
   }
   .archive .section-heading p {
     max-width: 13rem;
+  }
+}
+.archive-views {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.archive-year--shelf {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+.archive-year--shelf > h2 {
+  grid-column: 1/-1;
+}
+.archive-author {
+  padding: 1.5rem;
+  background: var(--color-surface-glass);
+  border: 1px solid var(--color-rim);
+  border-radius: var(--radius-jelly);
+  box-shadow: var(--shadow-card);
+}
+.archive-year + .archive-year {
+  margin-top: 2rem;
+}
+@media (max-width: 700px) {
+  .archive-year--shelf {
+    grid-template-columns: 1fr;
+  }
+  .archive {
+    padding: 0;
+  }
+  .archive-author {
+    border-left: 0;
+    padding-left: 0;
   }
 }
 </style>

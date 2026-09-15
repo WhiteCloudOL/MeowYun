@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useJellyPress } from '@/composables/useJellyPress'
+const { releasing, release } = useJellyPress()
 
 defineOptions({ inheritAttrs: false })
 
@@ -24,6 +26,16 @@ const props = withDefaults(
 )
 
 const attrs = useAttrs()
+// RouterLink 自己生成 href；传入空 href 会覆盖链接语义，导致文本光标和 Tab 不可达。
+const bindings = computed(() =>
+  props.disabled
+    ? { type: props.type, disabled: true }
+    : props.to
+      ? { to: props.to }
+      : props.href
+        ? { href: props.href }
+        : { type: props.type },
+)
 // 禁用时不创建带 href 的节点，避免 RouterLink 先处理点击或中键仍打开目标。
 const component = computed(() =>
   props.disabled ? 'button' : props.to ? RouterLink : props.href ? 'a' : 'button',
@@ -33,67 +45,16 @@ const component = computed(() =>
 <template>
   <component
     :is="component"
-    v-bind="attrs"
-    class="base-button"
-    :class="`base-button--${variant}`"
-    :to="!disabled ? to : undefined"
-    :href="!disabled ? href : undefined"
+    v-bind="{ ...attrs, ...bindings }"
+    class="base-button soft-button"
+    :class="['soft-button--' + variant, { 'is-releasing': releasing }]"
     :target="target"
     :rel="target === '_blank' ? 'noopener noreferrer' : undefined"
-    :type="component === 'button' ? type : undefined"
-    :disabled="component === 'button' ? disabled : undefined"
     :aria-disabled="disabled || undefined"
+    @pointerup="!disabled && release()"
+    @keyup.enter="!disabled && release()"
+    @keyup.space="!disabled && release()"
   >
     <slot />
   </component>
 </template>
-
-<style scoped>
-.base-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: var(--tap-size);
-  padding: 0.65rem 1.2rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-round);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  line-height: 1.4;
-  text-align: center;
-  transition:
-    transform var(--transition-press),
-    background var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-.base-button--primary {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  box-shadow: 0 3px 0 color-mix(in srgb, var(--color-link) 30%, transparent);
-}
-.base-button--secondary {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-.base-button--quiet {
-  background: transparent;
-  color: var(--color-link);
-}
-.base-button:not(:disabled):hover {
-  background: var(--color-primary-soft);
-  color: var(--color-text);
-}
-.base-button--primary:not(:disabled):hover {
-  background: var(--color-primary-hover);
-  color: var(--color-on-primary);
-}
-.base-button:not(:disabled):active {
-  transform: translateY(2px);
-  box-shadow: none;
-}
-.base-button[aria-disabled='true'] {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-</style>

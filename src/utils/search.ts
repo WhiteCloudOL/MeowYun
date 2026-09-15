@@ -44,7 +44,7 @@ export const searchEntries: SearchEntry[] = [
           group: '项目' as const,
           title: p.title,
           description: p.description,
-          href: '/navigation#project-' + p.id,
+          href: '/projects/' + p.id,
           text: p.title + ' ' + p.description + ' ' + p.technologies.join(' '),
         }))
     : []),

@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
-  background: var(--color-surface-raised);
+  background: linear-gradient(145deg,var(--color-surface-raised),var(--color-background-soft));
   color: var(--color-text);
   box-shadow: var(--shadow-popover);
 }

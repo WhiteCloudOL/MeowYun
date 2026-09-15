@@ -16,6 +16,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import { readPublicSiteConfig } from './build/siteConfig.ts'
 import { parseArticleSource } from './src/utils/articleMetadata.ts'
 import { archiveSeo, indexSeo, redirectSeo } from './src/utils/routeSeo.ts'
+import { extraPages } from './src/utils/extraPages.ts'
 
 const projectPath = (path: string) => fileURLToPath(new URL(path, import.meta.url))
 
@@ -244,7 +245,16 @@ function seoFilesPlugin(): Plugin {
           lastmod: '',
         }),
       )
-      const entries = [...staticPages, ...articlePages, ...tagPages]
+      const extraPublicPages = [
+        ...extraPages.filter((page) => !page.noIndex),
+        ...readConfig().projects.map((item) => ({ path: `/projects/${item.id}` })),
+      ].map((page) => ({
+        path: page.path.slice(1),
+        priority: '0.7',
+        changefreq: 'monthly',
+        lastmod: '',
+      }))
+      const entries = [...staticPages, ...articlePages, ...tagPages, ...extraPublicPages]
         .map(
           (page) => `  <url>
     <loc>${escapeXml(new URL(page.path, siteUrl).toString())}</loc>
@@ -296,6 +306,12 @@ function deploymentFilesPlugin(): Plugin {
       const articleMetadata = readArticleMetadata()
       const siteName = readSiteString('name', 'MeowYunCN')
       const routes: RouteSeo[] = [
+        ...extraPages.map((page) => ({ ...page, title: `${page.title} · ${siteName}` })),
+        ...readConfig().projects.map((item) => ({
+          path: `/projects/${item.id}`,
+          title: `${item.title} · ${siteName}`,
+          description: item.description,
+        })),
         {
           path: '/articles',
           ...archiveSeo(siteName),
@@ -354,11 +370,18 @@ function deploymentFilesPlugin(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [tailwindcss(), vue(), vueDevTools(), seoFilesPlugin(), deploymentFilesPlugin()],
+export default defineConfig(({ command }) => ({
+  build: { manifest: true },
+  plugins: [
+    tailwindcss(),
+    vue(),
+    ...(command === 'serve' ? [vueDevTools()] : []),
+    seoFilesPlugin(),
+    deploymentFilesPlugin(),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-})
+}))

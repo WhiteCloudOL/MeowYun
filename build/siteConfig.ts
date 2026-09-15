@@ -62,9 +62,23 @@ export function readPublicSiteConfig(source: string) {
     .map(object)
     .filter((item) => item.enabled === true && typeof item.path === 'string')
     .map((item) => String(item.path))
+  const projectSection = object(object(config.sections).projects)
+  const projects = (Array.isArray(projectSection.items) ? projectSection.items : [])
+    .map(object)
+    .filter((item) => item.enabled === true && typeof item.id === 'string')
+    .map((item) => {
+      if (!/^[a-zA-Z0-9_-]+$/.test(String(item.id)))
+        throw new Error('项目 ID 必须是安全的稳定路径片段')
+      return {
+        id: String(item.id),
+        title: typeof item.title === 'string' ? item.title : String(item.id),
+        description: typeof item.description === 'string' ? item.description : '',
+      }
+    })
   return {
     text,
     siteUrl: siteUrl.href.endsWith('/') ? siteUrl.href : siteUrl.href + '/',
     redirects,
+    projects,
   }
 }

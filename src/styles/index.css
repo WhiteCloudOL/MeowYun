@@ -3,6 +3,7 @@
 @import './reset.css';
 @import './base.css';
 @import './animations.css';
+@import './cottage.css';
 @config '../../tailwind.config.ts';
 
 @theme inline {
@@ -18,38 +19,4 @@
   --color-mint-pop: var(--color-secondary);
   --color-soft-navy: var(--color-text);
   --color-violet-gray: var(--color-text-secondary);
-}
-
-/* 默认箭头保留精确热点，小猫爪只作为角标；交互与按下状态再切换大猫爪。 */
-@media (pointer: fine) {
-  html,
-  body {
-    cursor:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'%3E%3Cpath d='M2 1.5V17l3.9-3.7 3.2 7.1 2.6-1.2-3.2-7h5.3z' fill='%23FFFDF9' stroke='%234A3B32' stroke-width='1.05' stroke-linejoin='round'/%3E%3Cg fill='%23FF9EBB' stroke='%234A3B32' stroke-width='.75'%3E%3Cellipse cx='20.2' cy='20.6' rx='3.1' ry='2.55'/%3E%3Ccircle cx='16.4' cy='17.25' r='1.45'/%3E%3Ccircle cx='20.2' cy='15.9' r='1.45'/%3E%3Ccircle cx='23.55' cy='17.3' r='1.45'/%3E%3C/g%3E%3C/svg%3E")
-        2 2,
-      auto;
-  }
-
-  :is(a, button, summary, [role='button'], [role='link'], label[for]) {
-    cursor:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'%3E%3Cg fill='%23FF9EBB' stroke='%234A3B32' stroke-width='1.1'%3E%3Cellipse cx='13' cy='17.3' rx='5.4' ry='4.4'/%3E%3Ccircle cx='5.4' cy='11.2' r='2.5'/%3E%3Ccircle cx='10.2' cy='7' r='2.5'/%3E%3Ccircle cx='16.3' cy='7' r='2.5'/%3E%3Ccircle cx='20.9' cy='11.2' r='2.5'/%3E%3C/g%3E%3Cpath d='M10.7 17.3q2.3-2.5 4.6 0' fill='none' stroke='%23FFFDF9' stroke-width='1.05' stroke-linecap='round'/%3E%3C/svg%3E")
-        13 14,
-      pointer;
-  }
-
-  :is(a, button, summary, [role='button'], [role='link'], label[for]):active {
-    cursor:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'%3E%3Cg fill='%23E96F98' stroke='%234A3B32' stroke-width='1.15'%3E%3Cellipse cx='13' cy='17' rx='5.7' ry='4.7'/%3E%3Ccircle cx='6' cy='11.4' r='2.6'/%3E%3Ccircle cx='10.7' cy='8.2' r='2.6'/%3E%3Ccircle cx='15.7' cy='8.2' r='2.6'/%3E%3Ccircle cx='20.3' cy='11.4' r='2.6'/%3E%3C/g%3E%3Cpath d='M10.1 17q2.9 1.8 5.8 0' fill='none' stroke='%23FFFDF9' stroke-width='1.05' stroke-linecap='round'/%3E%3C/svg%3E")
-        13 16,
-      grabbing;
-  }
-
-  :is(input, textarea, [contenteditable='true']) {
-    cursor: text;
-  }
-
-  :is(button, input, select, textarea)[disabled],
-  [aria-disabled='true'] {
-    cursor: not-allowed;
-  }
 }

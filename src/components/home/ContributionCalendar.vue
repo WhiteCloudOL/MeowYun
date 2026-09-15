@@ -158,7 +158,8 @@ onBeforeUnmount(() => {
   padding: 1.5rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
-  background: var(--color-surface);
+  background: var(--color-surface-glass);
+  box-shadow: var(--shadow-card);
 }
 .contribution-calendar header {
   display: flex;

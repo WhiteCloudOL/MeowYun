@@ -3,14 +3,18 @@ import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import ArticleTableOfContents from '@/components/articles/ArticleTableOfContents.vue'
 import MarkdownContent from '@/components/articles/MarkdownContent.vue'
+import ReaderBookmark from '@/components/articles/ReaderBookmark.vue'
+import { useReadingPreferences } from '@/composables/useReadingPreferences'
 import ReadingTools from '@/components/articles/ReadingTools.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
+import ImageFallback from '@/components/ui/ImageFallback.vue'
 import { renderMarkdown } from '@/content/articles/renderer'
 import { articles, getArticle } from '@/content/articles'
 import { siteConfig } from '@/config/site'
 import { updateSeo } from '@/utils/seo'
+const { settings } = useReadingPreferences()
 const route = useRoute()
 const article = computed(() => getArticle(String(route.params.slug)))
 const rendered = computed(() =>
@@ -19,6 +23,31 @@ const rendered = computed(() =>
 const index = computed(() => articles.findIndex((a) => a.slug === article.value?.slug))
 const newer = computed(() => (index.value > 0 ? articles[index.value - 1] : undefined))
 const older = computed(() => (index.value >= 0 ? articles[index.value + 1] : undefined))
+const cover = computed(
+  () =>
+    article.value?.cover ??
+    siteConfig.sections.articles.covers.find((c) => c.slug === article.value?.slug)?.image,
+)
+const related = computed(() => {
+  const tags = new Set(article.value?.tags.map((t) => t.toLocaleLowerCase()))
+  return articles
+    .filter((a) => a.slug !== article.value?.slug)
+    .map((a) => ({ article: a, tags: a.tags.filter((t) => tags.has(t.toLocaleLowerCase())) }))
+    .filter((a) => a.tags.length)
+    .sort((a, b) => b.tags.length - a.tags.length)
+    .slice(0, 3)
+})
+const relatedProjects = computed(() => {
+  const tags = new Set(article.value?.tags.map((t) => t.toLocaleLowerCase()))
+  return siteConfig.sections.projects.items
+    .filter((p) => p.enabled)
+    .map((project) => ({
+      project,
+      tags: project.technologies.filter((t) => tags.has(t.toLocaleLowerCase())),
+    }))
+    .filter((p) => p.tags.length)
+    .slice(0, 3)
+})
 const headings = computed(() => {
   const config = siteConfig.sections.articles.toc
   if (!config.enabled || !article.value) return []
@@ -59,8 +88,22 @@ watchEffect(() =>
       >
       <div class="article-layout">
         <div class="article-column">
-          <article class="article-surface">
+          <article
+            class="article-surface"
+            :style="{
+              '--reader-font-size': settings.fontSize + 'px',
+              '--reader-line-height': settings.lineHeight,
+            }"
+          >
             <header class="article-header">
+              <ImageFallback
+                v-if="cover"
+                class="article-cover"
+                :src="cover"
+                alt=""
+                loading="eager"
+                :data-transition-key="'article-' + article.slug"
+              />
               <p v-if="article.sourceUrl" class="eyebrow">导读 · 本站简要笔记</p>
               <h1 id="article-title">{{ article.title }}</h1>
               <p class="article-description">{{ article.description }}</p>
@@ -86,6 +129,7 @@ watchEffect(() =>
                   <IconGlyph name="arrow-up-right" :size="14" /></a
                 >。
               </p>
+              <ReaderBookmark :article-id="'article-' + article.slug" />
             </header>
             <div class="article-body"><MarkdownContent :html="rendered.html" /></div>
           </article>
@@ -97,6 +141,25 @@ watchEffect(() =>
               >{{ article.sourceLabel ?? '查看完整文档'
               }}<IconGlyph name="arrow-up-right" :size="16"
             /></BaseButton>
+          </section>
+          <section
+            v-if="related.length || relatedProjects.length"
+            class="article-related paper"
+            aria-labelledby="related-title"
+          >
+            <h2 id="related-title">沿着同一个话题，继续看看</h2>
+            <div v-for="item in related" :key="item.article.slug">
+              <RouterLink :to="'/articles/' + item.article.slug" class="text-link"
+                >{{ item.article.title }} →</RouterLink
+              >
+              <p>共同标签：{{ item.tags.join('、') }}</p>
+            </div>
+            <div v-for="item in relatedProjects" :key="item.project.id">
+              <RouterLink :to="'/projects/' + item.project.id" class="text-link"
+                >作品 · {{ item.project.title }} →</RouterLink
+              >
+              <p>共同技术：{{ item.tags.join('、') }}</p>
+            </div>
           </section>
           <nav v-if="newer || older" class="article-pager" aria-label="相邻文章">
             <RouterLink v-if="newer" :to="'/articles/' + newer.slug"
@@ -144,8 +207,9 @@ watchEffect(() =>
 }
 .article-surface {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-rim);
   border-radius: var(--radius-large);
+  box-shadow: var(--shadow-card);
 }
 .article-header,
 .article-body {
@@ -153,6 +217,31 @@ watchEffect(() =>
 }
 .article-header {
   border-bottom: 1px solid var(--color-border-soft);
+}
+.article-cover {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 30% 35% 29% 32%;
+  margin-bottom: 1.25rem;
+}
+.article-related {
+  margin-top: 1.5rem;
+}
+.article-related h2 {
+  font-size: var(--text-lg);
+  margin-bottom: 1rem;
+}
+.article-related > div + div {
+  margin-top: 0.75rem;
+}
+.article-related a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.article-related p {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
 }
 .article-header h1 {
   scroll-margin-top: calc(var(--header-clearance) + 5rem);
@@ -217,8 +306,9 @@ watchEffect(() =>
   display: grid;
   gap: 0.5rem;
   padding: 1.25rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-glass);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-rim);
   border-radius: var(--radius-medium);
 }
 .article-pager span {

@@ -35,7 +35,8 @@ const internal = computed(() => props.item.href.startsWith('/'))
   padding: 1.4rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
-  background: var(--color-surface);
+  background: var(--color-surface-glass);
+  box-shadow: var(--shadow-card);
   transition:
     transform var(--transition-normal),
     box-shadow var(--transition-normal);
@@ -59,7 +60,6 @@ const internal = computed(() => props.item.href.startsWith('/'))
 }
 @media (hover: hover) {
   .link-card:hover {
-    transform: translateY(-3px);
     box-shadow: var(--shadow-card-hover);
   }
 }

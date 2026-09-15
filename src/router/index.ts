@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { setupViewTransitions } from '@/utils/viewTransitions'
 import { siteConfig } from '@/config/site'
 import { updateSeo } from '@/utils/seo'
 import { archiveSeo, indexSeo, redirectSeo } from '@/utils/routeSeo'
@@ -39,6 +40,93 @@ const router = createRouter({
     return { top: 0 }
   },
   routes: [
+    {
+      path: '/lab/palette',
+      name: 'palette',
+      component: () => import('@/views/PaletteView.vue'),
+      meta: {
+        title: '配色调制器 · ' + siteConfig.meta.name,
+        description: '调制、微调、预览和保存配色，导出 CSS 变量。',
+      },
+    },
+    {
+      path: '/lab/focus',
+      name: 'focus',
+      component: () => import('@/views/FocusView.vue'),
+      meta: {
+        title: '云端专注角 · ' + siteConfig.meta.name,
+        description: '可以暂停、恢复和校正剩余时间的本地专注工具。',
+      },
+    },
+    {
+      path: '/postoffice',
+      name: 'postoffice',
+      component: () => import('@/views/PostofficeView.vue'),
+      meta: { title: '云间邮局 · ' + siteConfig.meta.name, noIndex: true },
+    },
+
+    {
+      path: '/about',
+      name: 'about',
+      component: () => import('@/views/AboutView.vue'),
+      meta: {
+        title: '小屋主人 · ' + siteConfig.meta.name,
+        description: siteConfig.sections.about.description,
+      },
+    },
+    {
+      path: '/moments',
+      name: 'moments',
+      component: () => import('@/views/MomentsView.vue'),
+      meta: {
+        title: '云间小记 · ' + siteConfig.meta.name,
+        description: '文章发布和站点更新的真实记录。',
+      },
+    },
+    {
+      path: '/roam',
+      name: 'roam',
+      component: () => import('@/views/RoamView.vue'),
+      meta: {
+        title: '漫游 · ' + siteConfig.meta.name,
+        description: '小屋里的星图、花园、邮局与漫游口袋。',
+      },
+    },
+    {
+      path: '/projects',
+      name: 'projects',
+      component: () => import('@/views/ProjectsView.vue'),
+      meta: {
+        title: '作品陈列室 · ' + siteConfig.meta.name,
+        description: '真实开源作品与工具的陈列室。',
+      },
+    },
+    {
+      path: '/projects/:slug',
+      name: 'project',
+      component: () => import('@/views/ProjectView.vue'),
+    },
+    {
+      path: '/lab',
+      name: 'lab',
+      component: () => import('@/views/LabView.vue'),
+      meta: {
+        title: '创意工坊 · ' + siteConfig.meta.name,
+        description: '在浏览器里制作明信片、调色与专注。',
+      },
+    },
+    {
+      path: '/lab/postcard',
+      name: 'postcard',
+      component: () => import('@/views/PostcardView.vue'),
+      meta: { title: '明信片工坊 · ' + siteConfig.meta.name, noIndex: true },
+    },
+    {
+      path: '/pocket',
+      name: 'pocket',
+      component: () => import('@/views/PocketView.vue'),
+      meta: { title: '我的口袋 · ' + siteConfig.meta.name, noIndex: true },
+    },
     {
       path: '/',
       name: 'home',
@@ -124,7 +212,7 @@ const router = createRouter({
 
 router.afterEach((to) => {
   // 文章需要发布日期、标签等完整 Meta，由 ArticleView 在内容解析完成后独立更新。
-  if (to.name === 'article') return
+  if (to.name === 'article' || to.name === 'project') return
 
   if (String(to.name).startsWith('articles')) {
     updateSeo({
@@ -147,4 +235,5 @@ router.afterEach((to) => {
   })
 })
 
+setupViewTransitions(router)
 export default router

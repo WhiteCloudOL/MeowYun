@@ -93,6 +93,14 @@ export type HomeSceneBackgrounds = Partial<
 >
 
 export interface SiteConfig {
+  /** 公开的 giscus 配置；默认不启用，不存放任何 GitHub Token。 */
+  guestbook?: {
+    enabled: boolean
+    repo: string
+    repoId: string
+    category: string
+    categoryId: string
+  }
   /** 日期与近况由作者维护；不填写时首页隐藏。 */
   nowNote?: { date: string; text: string; href?: string; linkLabel?: string }
   updates?: Array<{ date: string; text: string; href?: string }>

@@ -205,8 +205,8 @@ onBeforeUnmount(() => {
 .markdown-content {
   min-width: 0;
   color: var(--color-text);
-  font-size: 1.0625rem;
-  line-height: 1.9;
+  font-size: var(--reader-font-size, 1.0625rem);
+  line-height: var(--reader-line-height, 1.9);
   overflow-wrap: anywhere;
 }
 .markdown-rendered > :deep(* + *) {
@@ -287,7 +287,7 @@ onBeforeUnmount(() => {
   height: 0.35rem;
   border: solid var(--color-link);
   border-width: 0 0 2px 2px;
-  transform: translateY(-1px) rotate(-45deg);
+  transform: translateY(-1px);
 }
 .markdown-content :deep(blockquote) {
   padding: 1rem 1.5rem;
@@ -471,7 +471,7 @@ onBeforeUnmount(() => {
 }
 @media (max-width: 540px) {
   .markdown-content {
-    font-size: 1rem;
+    font-size: var(--reader-font-size, 1rem);
   }
   .markdown-content :deep(h2) {
     font-size: 1.35rem;

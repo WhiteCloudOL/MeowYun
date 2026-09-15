@@ -9,7 +9,7 @@
     <link rel="alternate" type="application/rss+xml" title="清蒸云鸭 RSS" href="/rss.xml" />
     <link rel="canonical" href="https://meowyun.cn/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fbf7f5" />
+    <meta name="theme-color" content="#fcf9fd" />
     <meta name="color-scheme" content="dark light" />
     <meta name="robots" content="index, follow" />
     <meta
@@ -45,6 +45,12 @@
       let preference = 'system'
       try {
         preference = localStorage.getItem('meowyun-theme') || 'system'
+        const atmosphere = localStorage.getItem('meowyun-atmosphere')
+        document.documentElement.dataset.atmosphere =
+          atmosphere === 'sky' || atmosphere === 'mint' ? atmosphere : 'cream'
+        document.documentElement.dataset.scenery = String(
+          localStorage.getItem('meowyun-scenery') !== 'false',
+        )
       } catch {
         /* 禁用存储时跟随系统。 */
       }
@@ -56,7 +62,7 @@
             : 'light'
       document.documentElement.dataset.theme = theme
       document.querySelector('meta[name="theme-color"]').content =
-        theme === 'dark' ? '#1f1b25' : '#fbf7f5'
+        theme === 'dark' ? '#222536' : '#fcf9fd'
     </script>
     <title>清蒸云鸭 · 个人主页</title>
   </head>

@@ -2,20 +2,17 @@
 import { siteConfig } from '@/config/site'
 import type { FriendLinkItem } from '@/config/schema'
 import { isRealFriend } from '@/utils/friends'
-import { useClipboard } from '@/composables/useClipboard'
+import CloudBanner from '@/components/ui/CloudBanner.vue'
+import { usePocket } from '@/composables/usePocket'
+import { onMounted } from 'vue'
 import ImageFallback from '@/components/ui/ImageFallback.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
-import BaseButton from '@/components/ui/BaseButton.vue'
+import SoftIllustration from '@/components/ui/SoftIllustration.vue'
+
 const friends = siteConfig.friendsPage.enabled
   ? siteConfig.friendsPage.items.filter(isRealFriend)
   : []
-const { message, manualText, copy } = useClipboard()
-const info = [
-  '名称：' + siteConfig.meta.name,
-  '地址：' + siteConfig.meta.siteUrl,
-  '简介：' + siteConfig.meta.description,
-  '头像：' + new URL(siteConfig.profile.avatar, siteConfig.meta.siteUrl).href,
-].join('\n')
+onMounted(() => usePocket().earn('garden-visit'))
 function friendIcon(friend: FriendLinkItem) {
   if (friend.avatar) return friend.avatar
   if (!siteConfig.friendsPage.autoFavicon) return undefined
@@ -39,8 +36,7 @@ function friendIcon(friend: FriendLinkItem) {
 </script>
 <template>
   <div class="friends-view page-shell page-content">
-    <header class="page-heading paper">
-      <IconGlyph name="users" :size="32" />
+    <header class="page-heading">
       <h1>{{ siteConfig.friendsPage.title }}</h1>
       <p>{{ siteConfig.friendsPage.description }}</p>
     </header>
@@ -51,7 +47,7 @@ function friendIcon(friend: FriendLinkItem) {
         :href="friend.href"
         target="_blank"
         rel="noopener noreferrer"
-        class="friend-card"
+        class="friend-card jelly-link"
         ><ImageFallback
           :src="friendIcon(friend)"
           :alt="friend.name + ' 的站点图标'"
@@ -64,35 +60,19 @@ function friendIcon(friend: FriendLinkItem) {
       /></a>
     </div>
     <section v-else class="garden-empty" aria-label="暂无公开友链">
-      <IconGlyph name="cloud" :size="40" />
+      <SoftIllustration kind="garden" tone="mint" class="garden-seed" />
       <h2>给下一位朋友，留一个位置</h2>
       <p>这里还没有公开的真实友链。<br />如果你也有认真打理的小站，欢迎来交换地址。</p>
     </section>
-    <section class="friend-apply paper" aria-labelledby="exchange-title">
-      <div>
-        <h2 id="exchange-title">交换友链</h2>
-        <p>{{ siteConfig.friendsPage.applicationText }}</p>
-        <a
-          v-if="siteConfig.friendsPage.applicationEmail"
-          class="text-link"
-          :href="'mailto:' + siteConfig.friendsPage.applicationEmail"
-          ><IconGlyph name="mail" :size="17" />{{ siteConfig.friendsPage.applicationEmail }}</a
-        >
+    <CloudBanner class="garden-envelope"
+      ><div>
+        <h2>给花园寄一个地址</h2>
+        <p>交换友链、复制本站信息，都在云间邮局里。</p>
       </div>
-      <div>
-        <BaseButton variant="secondary" @click="copy(info)"
-          ><IconGlyph name="link" :size="17" />复制本站友链信息</BaseButton
-        >
-        <p class="copy-status" role="status">{{ message }}</p>
-        <textarea
-          v-if="manualText"
-          :value="manualText"
-          readonly
-          aria-label="手动复制友链信息"
-          @focus="($event.target as HTMLTextAreaElement).select()"
-        ></textarea>
-      </div>
-    </section>
+      <RouterLink to="/postoffice?purpose=friend" class="cottage-button"
+        >打开交换友链信纸 ↗</RouterLink
+      ></CloudBanner
+    >
   </div>
 </template>
 <style scoped>
@@ -103,51 +83,42 @@ function friendIcon(friend: FriendLinkItem) {
   max-width: none;
   text-align: center;
 }
-.friends-view .page-heading > svg {
-  margin: 0 auto 1rem;
-  color: var(--color-link);
-}
 .friends-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
+  gap: 2rem;
 }
 .friend-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: center;
-  padding: 1.5rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
-  transition: transform var(--transition-normal);
 }
 .friend-avatar {
   width: 3.5rem;
   height: 3.5rem;
   border-radius: var(--radius-medium);
 }
-.friend-card h2 {
-  font-size: var(--text-lg);
+.friend-card h2,
+.garden-envelope h2 {
+  font-size: var(--text-xl);
 }
-.friend-card p {
+.friend-card p,
+.garden-envelope p {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
-  margin-top: 0.5rem;
+  margin: 0.5rem 0;
 }
 .garden-empty {
   display: grid;
   justify-items: center;
   gap: 0.75rem;
   text-align: center;
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-large);
-  background: var(--color-secondary-soft);
-}
-.garden-empty > svg {
-  color: var(--color-success);
+  padding: 2.5rem 1.5rem;
+  border: 1px solid var(--color-rim);
+  border-radius: var(--radius-jelly);
+  background: linear-gradient(150deg, rgb(var(--tone-mint) / 0.23), var(--color-surface-glass));
+  box-shadow: var(--shadow-card);
 }
 .garden-empty h2 {
   font-size: var(--text-xl);
@@ -155,41 +126,14 @@ function friendIcon(friend: FriendLinkItem) {
 .garden-empty p {
   color: var(--color-text-secondary);
 }
-.friend-apply {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: 2rem;
-  align-items: center;
+.garden-seed {
+  width: min(15rem, 70%);
+}
+.garden-envelope {
   margin-top: 2rem;
 }
-.friend-apply h2 {
-  font-size: var(--text-lg);
-  margin-bottom: 0.75rem;
-}
-.friend-apply p {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
-.friend-apply textarea {
-  width: 100%;
-  min-height: 8rem;
-  background: var(--color-background);
-  padding: 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-small);
-}
-.copy-status {
-  margin-top: 0.75rem;
-  min-height: 1.5em;
-}
-@media (hover: hover) {
-  .friend-card:hover {
-    transform: translateY(-3px);
-  }
-}
 @media (max-width: 760px) {
-  .friends-grid,
-  .friend-apply {
+  .friends-grid {
     grid-template-columns: 1fr;
   }
 }

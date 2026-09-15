@@ -223,8 +223,9 @@ onBeforeUnmount(() => {
   max-width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-small);
-  background: var(--color-background);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-glass);
+  box-shadow: inset 0 2px 2px var(--color-rim);
   font-variant-numeric: tabular-nums;
   transition: background var(--transition-fast);
 }
@@ -246,7 +247,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
   color: var(--color-text);
-  background: var(--color-surface-raised);
+  background: linear-gradient(145deg,var(--color-surface-raised),var(--color-background-soft));
   box-shadow: var(--shadow-popover);
   overflow: auto;
 }

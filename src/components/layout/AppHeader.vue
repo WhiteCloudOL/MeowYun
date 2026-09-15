@@ -14,7 +14,13 @@ const root = ref<HTMLElement>()
 const menuButton = ref<HTMLButtonElement>()
 const mobileOpen = ref(false)
 const mobilePanelId = 'primary-navigation'
-const navigation = siteConfig.navigation.filter((x) => x.enabled && x.to)
+const navigation = [
+  { label: '首页', to: '/', icon: 'home' as const },
+  { label: '文章', to: '/articles', icon: 'book-open' as const },
+  { label: '作品', to: '/projects', icon: 'folder' as const },
+  { label: '工坊', to: '/lab', icon: 'palette' as const },
+  { label: '漫游', to: '/roam', icon: 'compass' as const },
+]
 const contacts = computed(() => {
   const entries = siteConfig.navigation.filter((x) => x.enabled).flatMap((x) => x.children ?? [])
   const email = siteConfig.profile.socials.find((x) => x.enabled && x.href.startsWith('mailto:'))
@@ -56,7 +62,7 @@ function outside(e: PointerEvent) {
   if (!root.value?.contains(e.target as Node)) close()
 }
 function resize() {
-  if (window.innerWidth > 760) close()
+  if (window.innerWidth > 900) close()
 }
 watch(
   () => route.fullPath,
@@ -103,51 +109,101 @@ onBeforeUnmount(() => {
         >
       </nav>
       <div class="app-header__actions">
-        <BasePopover v-if="contacts.length" label="联系作者"
-          ><template #trigger
-            ><IconGlyph name="mail" /><span class="contact-label">联系</span></template
-          ><template #default="{ close: closeContact }"
-            ><a
-              v-for="item in contacts"
-              :key="item.id"
-              :href="item.href"
-              :target="item.href.startsWith('mailto:') ? undefined : '_blank'"
-              rel="noopener noreferrer"
-              @click="closeContact()"
-              ><ConfigIcon :name="item.icon" :provider="item.iconProvider" :size="18" /><span
-                >{{ purpose(item.id) }}<small>{{ item.label }}</small></span
-              ></a
-            ></template
-          ></BasePopover
-        >
-        <button
-          type="button"
-          class="icon-button"
-          aria-label="站内快速查找"
-          v-tooltip
-          data-tooltip="站内快速查找 · Ctrl / ⌘ K"
-          aria-keyshortcuts="Control+k Meta+k"
-          @click="requestSearch"
-        >
-          <IconGlyph name="search" />
-        </button>
-        <ThemeToggle v-if="siteConfig.appearance.themeToggle" />
-        <button
-          ref="menuButton"
-          class="icon-button mobile-toggle"
-          type="button"
-          :aria-label="mobileOpen ? '关闭导航' : '打开导航'"
-          :aria-expanded="mobileOpen"
-          aria-controls="primary-navigation"
-          @click="toggleMobile"
-        >
-          <IconGlyph :name="mobileOpen ? 'x' : 'menu'" />
-        </button>
+        <div class="header-personal">
+          <RouterLink
+            to="/pocket"
+            class="header-action"
+            aria-label="我的收藏"
+            :aria-current="route.path === '/pocket' ? 'page' : undefined"
+            ><IconGlyph name="heart" :size="18" /><span class="action-label">收藏</span></RouterLink
+          >
+          <BasePopover v-if="contacts.length" label="联系作者"
+            ><template #trigger
+              ><IconGlyph name="mail" :size="18" /><span class="action-label">联系</span></template
+            ><template #default="{ close: closeContact }"
+              ><a
+                v-for="item in contacts"
+                :key="item.id"
+                :href="item.href"
+                :target="item.href.startsWith('mailto:') ? undefined : '_blank'"
+                rel="noopener noreferrer"
+                @click="closeContact()"
+                ><ConfigIcon :name="item.icon" :provider="item.iconProvider" :size="18" /><span
+                  >{{ purpose(item.id) }}<small>{{ item.label }}</small></span
+                ></a
+              ></template
+            ></BasePopover
+          >
+        </div>
+        <div class="header-utilities">
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="站内快速查找"
+            v-tooltip
+            data-tooltip="站内快速查找 · Ctrl / ⌘ K"
+            aria-keyshortcuts="Control+k Meta+k"
+            @click="requestSearch"
+          >
+            <IconGlyph name="search" />
+          </button>
+          <ThemeToggle v-if="siteConfig.appearance.themeToggle" />
+          <button
+            ref="menuButton"
+            class="icon-button mobile-toggle"
+            type="button"
+            :aria-label="mobileOpen ? '关闭导航' : '打开导航'"
+            :aria-expanded="mobileOpen"
+            aria-controls="primary-navigation"
+            @click="toggleMobile"
+          >
+            <IconGlyph :name="mobileOpen ? 'x' : 'menu'" />
+          </button>
+        </div>
       </div>
     </div>
   </header>
 </template>
 <style scoped>
+.header-utilities :deep(.icon-button) {
+  border-color: transparent;
+  background: transparent;
+}
+.header-utilities :deep(.icon-button:hover),
+.header-utilities :deep(.icon-button[aria-expanded='true']) {
+  background: var(--color-primary-soft);
+}
+.header-personal,
+.header-utilities {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.header-utilities {
+  border-left: 1px solid var(--color-border);
+  padding-left: 0.5rem;
+  margin-left: 0.25rem;
+}
+.header-action {
+  transform: none;
+  rotate: none;
+  transition: background 160ms ease, color 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: var(--tap-size);
+  min-height: var(--tap-size);
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-round);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.header-action:hover,
+.header-action[aria-current='page'] {
+  background: var(--color-primary-soft);
+  color: var(--color-link);
+}
 .app-header {
   position: fixed;
   z-index: var(--z-header);
@@ -166,12 +222,17 @@ onBeforeUnmount(() => {
   max-width: calc(100% - 1.5rem);
   margin-inline: auto;
   padding: 0.4rem 0.6rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-rim);
   border-radius: var(--radius-round);
-  background: var(--color-surface);
-  box-shadow:
-    0 4px 0 var(--color-primary-soft),
-    var(--shadow-card);
+  background: linear-gradient(
+    105deg,
+    rgb(var(--tone-rose) / 0.16),
+    var(--color-surface-glass) 45%,
+    rgb(var(--tone-blue) / 0.13) 72%,
+    rgb(var(--tone-mint) / 0.16)
+  );
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
   pointer-events: auto;
 }
 .app-header__brand {
@@ -196,6 +257,10 @@ onBeforeUnmount(() => {
   gap: 0.25rem;
 }
 .app-header__nav a {
+  transform: none;
+  rotate: none;
+  animation: none;
+  transition: background 160ms ease, color 160ms ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,6 +269,7 @@ onBeforeUnmount(() => {
   padding: 0.5rem 0.8rem;
   border-radius: var(--radius-round);
   font-size: var(--text-sm);
+  white-space: nowrap;
 }
 .app-header__nav a[aria-current='page'],
 .app-header__nav a:hover {
@@ -223,7 +289,7 @@ onBeforeUnmount(() => {
     display: none;
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .app-header__inner {
     width: calc(100% - 1.5rem);
   }
@@ -249,8 +315,20 @@ onBeforeUnmount(() => {
   .mobile-toggle {
     display: inline-grid;
   }
-  .contact-label {
+  .action-label {
     display: none;
+  }
+}
+@media (max-width: 360px) {
+  .header-personal,
+  .header-utilities,
+  .app-header__actions {
+    gap: 0;
+  }
+  .header-utilities {
+    border: 0;
+    padding: 0;
+    margin: 0;
   }
 }
 @media (max-width: 420px) {

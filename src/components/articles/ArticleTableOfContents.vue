@@ -137,7 +137,8 @@ watch([activeId, opened], measure)
 .article-toc {
   padding: 1rem;
   min-width: 0;
-  background: var(--color-surface);
+  background: var(--color-surface-glass);
+  box-shadow: var(--shadow-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
 }

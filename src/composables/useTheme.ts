@@ -14,7 +14,10 @@ function syncDocumentTheme() {
   document.documentElement.dataset.theme = theme.value
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', theme.value === 'dark' ? '#1f1b25' : '#fbf7f5')
+    ?.setAttribute(
+      'content',
+      getComputedStyle(document.documentElement).getPropertyValue('--color-background').trim(),
+    )
 }
 function applyThemePreference(value: ThemePreference) {
   preference.value = value

@@ -26,8 +26,19 @@ textarea {
   font: inherit;
   color: inherit;
 }
-button {
+button,
+a[href],
+summary,
+[role='button'] {
   cursor: pointer;
+}
+input,
+textarea,
+[contenteditable='true'] {
+  cursor: text;
+}
+[aria-disabled='true'] {
+  cursor: not-allowed;
 }
 button:disabled {
   cursor: not-allowed;
@@ -50,6 +61,10 @@ p {
 :focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 4px;
+}
+/* 路由将标题作为读屏落点；它不是可操作控件，不绘制按钮式焦点框。 */
+#main-content h1[tabindex='-1']:focus {
+  outline: none;
 }
 [id] {
   scroll-margin-top: var(--header-clearance);
@@ -95,8 +110,9 @@ p {
   text-underline-offset: 0.25em;
 }
 .paper {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-glass);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-rim);
   border-radius: var(--radius-large);
   padding: clamp(1.25rem, 4vw, 2.5rem);
 }
@@ -108,7 +124,8 @@ p {
   height: var(--tap-size);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-round);
-  background: var(--color-surface);
+  background: var(--color-surface-glass);
+  box-shadow: inset 0 1px 1px var(--color-rim);
   transition:
     background var(--transition-fast),
     transform var(--transition-press);
@@ -120,6 +137,9 @@ p {
   transform: translateY(1px);
 }
 .chip {
+  transform: none;
+  rotate: none;
+  animation: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -151,6 +171,9 @@ button.chip:hover {
   font-size: var(--text-xs);
 }
 .search-field {
+  box-shadow:
+    inset 0 2px 3px rgb(var(--tone-lilac) / 0.12),
+    0 1px var(--color-rim);
   display: flex;
   gap: 0.7rem;
   align-items: center;
@@ -234,4 +257,67 @@ input[type='search']::-webkit-search-results-decoration {
   font-size: var(--text-xs);
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+/* 原生语义保留，表面和滑块统一由本站绘制；不调用系统颜色/日期弹窗。 */
+.field-label {
+  display: grid;
+  gap: 0.45rem;
+  font-size: var(--text-sm);
+}
+.milk-input {
+  display: block;
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-glass);
+  box-shadow: inset 0 2px 3px rgb(var(--tone-lilac) / 0.12);
+  color: var(--color-text);
+}
+textarea.milk-input {
+  min-height: 8rem;
+  resize: vertical;
+}
+.milk-input[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+.milk-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+}
+.milk-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 9px;
+  border: 1px solid var(--color-border);
+  background: linear-gradient(90deg, rgb(var(--tone-rose) / 0.6), rgb(var(--tone-blue) / 0.6));
+}
+.milk-range::-moz-range-track {
+  height: 8px;
+  border-radius: 9px;
+  border: 1px solid var(--color-border);
+  background: rgb(var(--tone-blue) / 0.6);
+}
+.milk-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border: 2px solid var(--color-link);
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: 0 2px 5px rgb(var(--tone-lilac) / 0.4);
+}
+.milk-range::-moz-range-thumb {
+  width: 21px;
+  height: 21px;
+  border: 2px solid var(--color-link);
+  border-radius: 50%;
+  background: var(--color-surface);
 }

@@ -7,6 +7,7 @@ const props = defineProps<{ title: string }>()
 const { message, manualText, copy } = useClipboard()
 const { quietEffective } = useMotion()
 const progress = ref(0)
+const hasRange=ref(false)
 const canShare = ref(false)
 const shareMessage = ref('')
 const scrolled = ref(false)
@@ -29,6 +30,7 @@ function measure() {
   const element = document.querySelector('.article-body')
   if (element) {
     start = element.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.25
+    hasRange.value = element.scrollHeight > window.innerHeight - 40
     distance = Math.max(1, element.scrollHeight - window.innerHeight * 0.5)
   }
   schedule()
@@ -69,9 +71,10 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div
+    v-if="hasRange"
     class="reading-progress"
     role="progressbar"
-    aria-label="阅读进度"
+    aria-label="当前浏览位置"
     :aria-valuenow="progress"
     aria-valuemin="0"
     aria-valuemax="100"
