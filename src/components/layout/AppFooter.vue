@@ -11,7 +11,7 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 <template>
   <footer class="app-footer" :class="{ 'app-footer--compact': compact }">
     <div class="page-shell">
-      <div class="app-footer__cloud">
+      <div class="app-footer__content">
         <div class="app-footer__primary">
           <RouterLink
             class="app-footer__brand"
@@ -32,54 +32,53 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
         <p class="app-footer__summary">
           文章、作品和可以带走的小工具，都收在这片云里。收藏与偏好只保存在当前浏览器。
         </p>
-      </div>
-
-      <div class="app-footer__legal">
-        <p class="app-footer__note">
-          <IconGlyph name="heart" :size="14" />
-          {{ siteConfig.footer.text }}
-        </p>
-        <div
-          v-if="siteConfig.footer.icp || siteConfig.footer.publicSecurity"
-          class="app-footer__beian"
-        >
-          <a
-            v-if="siteConfig.footer.icp"
-            class="beian-item"
-            :href="siteConfig.footer.icp.href"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div class="app-footer__legal">
+          <p class="app-footer__note">
+            <IconGlyph name="heart" :size="14" />
+            {{ siteConfig.footer.text }}
+          </p>
+          <div
+            v-if="siteConfig.footer.icp || siteConfig.footer.publicSecurity"
+            class="app-footer__beian"
           >
-            {{ siteConfig.footer.icp.number }}
-          </a>
-          <a
-            v-if="siteConfig.footer.publicSecurity"
-            class="beian-item"
-            :href="siteConfig.footer.publicSecurity.href"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              v-if="!iconFailed"
-              :src="siteConfig.footer.publicSecurity.iconUrl"
-              alt=""
-              width="16"
-              height="16"
-              loading="lazy"
-              @error="iconFailed = true"
-            />
-            <span>{{ siteConfig.footer.publicSecurity.number }}</span>
-          </a>
+            <a
+              v-if="siteConfig.footer.icp"
+              class="beian-item"
+              :href="siteConfig.footer.icp.href"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ siteConfig.footer.icp.number }}
+            </a>
+            <a
+              v-if="siteConfig.footer.publicSecurity"
+              class="beian-item"
+              :href="siteConfig.footer.publicSecurity.href"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                v-if="!iconFailed"
+                :src="siteConfig.footer.publicSecurity.iconUrl"
+                alt=""
+                width="16"
+                height="16"
+                loading="lazy"
+                @error="iconFailed = true"
+              />
+              <span>{{ siteConfig.footer.publicSecurity.number }}</span>
+            </a>
+          </div>
+          <p v-if="siteConfig.footer.imageDisclaimer" class="app-footer__disclaimer">
+            {{ siteConfig.footer.imageDisclaimer }}
+            <a
+              v-if="siteConfig.friendsPage.applicationEmail"
+              :href="`mailto:${siteConfig.friendsPage.applicationEmail}`"
+            >
+              联系邮箱
+            </a>
+          </p>
         </div>
-        <p v-if="siteConfig.footer.imageDisclaimer" class="app-footer__disclaimer">
-          {{ siteConfig.footer.imageDisclaimer }}
-          <a
-            v-if="siteConfig.friendsPage.applicationEmail"
-            :href="`mailto:${siteConfig.friendsPage.applicationEmail}`"
-          >
-            联系邮箱
-          </a>
-        </p>
       </div>
     </div>
   </footer>
@@ -87,23 +86,17 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 <style scoped>
 .app-footer {
-  padding-block: clamp(3rem, 7vw, 5rem) 1.5rem;
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-}
-.app-footer__cloud {
-  padding: clamp(2rem, 5vw, 3.25rem);
-  border: 1px solid var(--color-rim);
-  border-radius: 2.25rem;
+  margin-top: clamp(3rem, 7vw, 5rem);
+  padding-block: clamp(2.25rem, 5vw, 3.5rem) 1.5rem;
+  border-top: 1px solid var(--color-border);
   background: linear-gradient(
     112deg,
-    rgb(var(--tone-rose) / 0.11),
-    var(--color-surface-glass) 42%,
-    rgb(var(--tone-blue) / 0.2) 100%
+    rgb(var(--tone-rose) / 0.07),
+    transparent 42%,
+    rgb(var(--tone-blue) / 0.11) 100%
   );
-  box-shadow:
-    inset 0 1px 0 var(--color-rim),
-    0 20px 45px -34px rgb(87 92 140 / 30%);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
 }
 .app-footer__primary {
   display: flex;
@@ -111,8 +104,6 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
   gap: 1.5rem 2rem;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--color-border);
-  padding-top: clamp(2rem, 4vw, 2.75rem);
 }
 .app-footer__brand,
 .app-footer__brand-mark,
@@ -164,7 +155,7 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
   flex-wrap: wrap;
   gap: 0.25rem 1.5rem;
   align-items: center;
-  padding: 1.1rem clamp(0.25rem, 1vw, 0.75rem) 0;
+  margin-top: 1.35rem;
 }
 .app-footer__note,
 .app-footer__beian,
@@ -199,14 +190,9 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
   text-underline-offset: 0.2em;
 }
 @media (max-width: 640px) {
-  .app-footer__cloud {
-    padding: 1.5rem;
-    border-radius: 1.75rem;
-  }
   .app-footer__primary {
     align-items: flex-start;
     flex-direction: column;
-    padding-top: 1.5rem;
   }
   .app-footer__nav {
     justify-content: flex-start;
