@@ -6,7 +6,7 @@ import { siteConfig } from '@/config/site'
 import ConfigIcon from '@/components/ui/ConfigIcon.vue'
 import IconGlyph from '@/components/ui/IconGlyph.vue'
 import BasePopover from '@/components/ui/BasePopover.vue'
-import ImageFallback from '@/components/ui/ImageFallback.vue'
+import CloudBrandMark from '@/components/ui/CloudBrandMark.vue'
 import ThemeToggle from './ThemeToggle.vue'
 const emit = defineEmits<{ search: [] }>()
 const route = useRoute()
@@ -15,11 +15,11 @@ const menuButton = ref<HTMLButtonElement>()
 const mobileOpen = ref(false)
 const mobilePanelId = 'primary-navigation'
 const navigation = [
-  { label: '首页', to: '/', icon: 'home' as const },
-  { label: '文章', to: '/articles', icon: 'book-open' as const },
-  { label: '作品', to: '/projects', icon: 'folder' as const },
-  { label: '工坊', to: '/lab', icon: 'palette' as const },
-  { label: '漫游', to: '/roam', icon: 'compass' as const },
+  { label: '首页', to: '/' },
+  { label: '文章', to: '/articles' },
+  { label: '作品', to: '/projects' },
+  { label: '工坊', to: '/lab' },
+  { label: '漫游', to: '/roam' },
 ]
 const contacts = computed(() => {
   const entries = siteConfig.navigation.filter((x) => x.enabled).flatMap((x) => x.children ?? [])
@@ -86,13 +86,8 @@ onBeforeUnmount(() => {
   <header ref="root" class="app-header">
     <div class="app-header__inner">
       <RouterLink class="app-header__brand" to="/" :aria-label="siteConfig.meta.name + ' · 首页'"
-        ><ImageFallback
-          src="/brand-mark.webp"
-          alt=""
-          loading="eager"
-          class="app-header__mark"
-          fit="contain"
-        /><span>{{ siteConfig.meta.name }}</span></RouterLink
+        ><span class="app-header__mark" aria-hidden="true"><CloudBrandMark /></span
+        ><span>{{ siteConfig.meta.name }}</span></RouterLink
       >
       <nav
         id="primary-navigation"
@@ -105,7 +100,7 @@ onBeforeUnmount(() => {
           :key="item.to"
           :to="item.to!"
           :aria-current="active(item.to) ? 'page' : undefined"
-          ><IconGlyph :name="item.icon" :size="18" />{{ item.label }}</RouterLink
+          >{{ item.label }}</RouterLink
         >
       </nav>
       <div class="app-header__actions">
@@ -114,6 +109,8 @@ onBeforeUnmount(() => {
             to="/pocket"
             class="header-action"
             aria-label="我的收藏"
+            v-tooltip
+            data-tooltip="我的收藏"
             :aria-current="route.path === '/pocket' ? 'page' : undefined"
             ><IconGlyph name="heart" :size="18" /><span class="action-label">收藏</span></RouterLink
           >
@@ -168,6 +165,7 @@ onBeforeUnmount(() => {
 .header-utilities :deep(.icon-button) {
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
 }
 .header-utilities :deep(.icon-button:hover),
 .header-utilities :deep(.icon-button[aria-expanded='true']) {
@@ -177,24 +175,26 @@ onBeforeUnmount(() => {
 .header-utilities {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 .header-utilities {
   border-left: 1px solid var(--color-border);
-  padding-left: 0.5rem;
-  margin-left: 0.25rem;
+  padding-left: 0.65rem;
+  margin-left: 0.5rem;
 }
 .header-action {
   transform: none;
   rotate: none;
-  transition: background 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0;
   min-width: var(--tap-size);
   min-height: var(--tap-size);
-  padding: 0.5rem 0.7rem;
+  padding: 0.5rem;
   border-radius: var(--radius-round);
   font-size: var(--text-sm);
   white-space: nowrap;
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
 .app-header {
   position: fixed;
   z-index: var(--z-header);
-  top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  top: calc(0.9rem + env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
   pointer-events: none;
@@ -217,56 +217,62 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  width: max-content;
-  max-width: calc(100% - 1.5rem);
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  width: min(calc(100% - 2rem), calc(var(--page-max-width) + var(--page-padding) * 2));
+  min-height: 5.25rem;
   margin-inline: auto;
-  padding: 0.4rem 0.6rem;
+  padding: 0.65rem clamp(0.8rem, 2vw, 1.45rem);
   border: 1px solid var(--color-rim);
-  border-radius: var(--radius-round);
+  border-radius: 2.75rem;
   background: linear-gradient(
-    105deg,
-    rgb(var(--tone-rose) / 0.16),
-    var(--color-surface-glass) 45%,
-    rgb(var(--tone-blue) / 0.13) 72%,
-    rgb(var(--tone-mint) / 0.16)
+    100deg,
+    rgb(var(--tone-rose) / 0.2),
+    var(--color-surface-glass) 43%,
+    rgb(var(--tone-blue) / 0.17) 74%,
+    rgb(var(--tone-mint) / 0.2)
   );
-  box-shadow: var(--shadow-card);
-  backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 var(--color-rim),
+    0 18px 42px -27px rgb(100 94 145 / 34%);
+  backdrop-filter: blur(16px);
   pointer-events: auto;
 }
 .app-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   min-height: var(--tap-size);
   min-width: var(--tap-size);
   font-weight: 700;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   white-space: nowrap;
 }
 .app-header__mark {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   flex-shrink: 0;
 }
 .app-header__nav,
 .app-header__actions {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
+}
+.app-header__nav {
+  margin-left: auto;
 }
 .app-header__nav a {
   transform: none;
   rotate: none;
   animation: none;
-  transition: background 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
   min-height: var(--tap-size);
-  padding: 0.5rem 0.8rem;
+  padding: 0.55rem clamp(0.72rem, 1.15vw, 1rem);
   border-radius: var(--radius-round);
   font-size: var(--text-sm);
   white-space: nowrap;
@@ -281,17 +287,25 @@ onBeforeUnmount(() => {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
+.action-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .mobile-toggle {
   display: none;
 }
 @media (max-width: 900px) {
-  .app-header__brand > span:last-child {
-    display: none;
-  }
-}
-@media (max-width: 900px) {
   .app-header__inner {
     width: calc(100% - 1.5rem);
+    min-height: 4.5rem;
+    padding-block: 0.45rem;
   }
   .app-header__brand > span:last-child {
     display: block;
@@ -304,8 +318,8 @@ onBeforeUnmount(() => {
     right: 0;
     padding: 0.5rem;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-medium);
-    background: var(--color-surface-raised);
+    border-radius: 1.75rem;
+    background: linear-gradient(145deg, var(--color-surface-raised), var(--color-background-soft));
     box-shadow: var(--shadow-popover);
   }
   .app-header__nav.is-open {
@@ -314,9 +328,6 @@ onBeforeUnmount(() => {
   }
   .mobile-toggle {
     display: inline-grid;
-  }
-  .action-label {
-    display: none;
   }
 }
 @media (max-width: 360px) {

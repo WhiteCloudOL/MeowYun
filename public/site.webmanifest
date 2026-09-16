@@ -5,9 +5,15 @@
   "lang": "zh-CN",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fbf7f5",
-  "theme_color": "#fbf7f5",
+  "background_color": "#fcf9fd",
+  "theme_color": "#fcf9fd",
   "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/favicon.png",
       "sizes": "512x512",
